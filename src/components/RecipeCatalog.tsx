@@ -2,6 +2,7 @@ import { useDeferredValue, useEffect, useMemo, useRef, useState } from 'react';
 import {
   ArrowUpDown,
   BookOpen,
+  CheckCircle2,
   ChevronDown,
   Clock,
   Globe,
@@ -11,6 +12,7 @@ import {
   Search,
   SearchX,
   Sparkles,
+  Trash2,
   X,
 } from 'lucide-react';
 import {
@@ -27,10 +29,20 @@ import type {
   RecipeVideo,
 } from '../types/recipe';
 import {
+  dispatchDeleteRecipeWorkflow,
+  GitHubApiError,
+} from '../utils/githubClient';
+import {
+  DELETED_RECIPES_STORAGE_KEY,
+  getStoredDeletedRecipes,
   getStoredInstantRecipes,
   INSTANT_RECIPES_STORAGE_KEY,
+  markRecipeAsDeleted,
   pruneBuiltInstantRecipes,
+  pruneDeletedRecipes,
   RECIPE_ADDED_EVENT,
+  RECIPE_DELETED_EVENT,
+  requestOpenAddRecipeModal,
   requestOpenInstantRecipe,
 } from '../utils/instantRecipes';
 import { withBase } from '../utils/paths';
@@ -39,6 +51,9 @@ import {
   formatRecipeCount,
   formatTotalTime,
 } from '../utils/recipe';
+import DeleteRecipeModal, {
+  type DeleteRecipePreview,
+} from './DeleteRecipeModal';
 
 export interface CatalogRecipe {
   slug: string;
@@ -212,9 +227,14 @@ function RecipeCardImage({
 interface RecipeCardProps {
   recipe: CatalogRecipe;
   priority?: boolean;
+  onRequestDelete: (recipe: CatalogRecipe) => void;
 }
 
-function RecipeCard({ recipe, priority = false }: RecipeCardProps) {
+function RecipeCard({
+  recipe,
+  priority = false,
+  onRequestDelete,
+}: RecipeCardProps) {
   const categoryMeta = getCategoryMeta(recipe.category);
   const CategoryIcon = categoryMeta.icon;
   const mainImage =
@@ -223,16 +243,7 @@ function RecipeCard({ recipe, priority = false }: RecipeCardProps) {
   const recipeHref = withBase(`/przepis/${recipe.slug}`);
 
   return (
-    <a
-      href={recipeHref}
-      onClick={(event) => {
-        if (!recipe.isStaticBuilt && recipe.fullRecipe) {
-          event.preventDefault();
-          requestOpenInstantRecipe(recipe.fullRecipe);
-        }
-      }}
-      className="catalog-item-enter group flex flex-col overflow-hidden rounded-2xl border border-[#EAE5DF] bg-white shadow-xs transition-all duration-200 hover:-translate-y-0.5 hover:border-[#4A6B53]/35 hover:shadow-md active:scale-[0.99] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4A6B53] focus-visible:ring-offset-2 focus-visible:ring-offset-[#FAF8F5] touch-manipulation"
-    >
+    <article className="catalog-item-enter group relative flex flex-col overflow-hidden rounded-2xl border border-[#EAE5DF] bg-white shadow-xs transition-all duration-200 hover:-translate-y-0.5 hover:border-[#4A6B53]/35 hover:shadow-md has-[a:active]:scale-[0.99] has-[a:focus-visible]:ring-2 has-[a:focus-visible]:ring-[#4A6B53] has-[a:focus-visible]:ring-offset-2 has-[a:focus-visible]:ring-offset-[#FAF8F5] touch-manipulation">
       <RecipeCardImage
         image={mainImage}
         title={recipe.title}
@@ -243,17 +254,42 @@ function RecipeCard({ recipe, priority = false }: RecipeCardProps) {
       />
 
       <div className="flex flex-1 flex-col p-5">
-        <div className="flex items-center justify-between gap-2">
+        <div className="flex items-start justify-between gap-2">
           <span
             className={`inline-flex w-fit items-center gap-1.5 rounded-lg px-2.5 py-1 text-xs font-semibold ${categoryMeta.badgeClass}`}
           >
             <CategoryIcon className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
             <span>{recipe.category}</span>
           </span>
+
+          <button
+            type="button"
+            onClick={(event) => {
+              event.preventDefault();
+              event.stopPropagation();
+              onRequestDelete(recipe);
+            }}
+            aria-label={`Usuń przepis ${recipe.title}`}
+            title="Usuń przepis"
+            className="relative z-10 -mt-1 -mr-1 inline-flex h-9 w-9 shrink-0 cursor-pointer items-center justify-center rounded-xl border border-[#EAE5DF]/80 bg-[#FAF8F5]/75 text-[#1F2421]/45 transition-all duration-150 before:absolute before:-inset-1 before:content-[''] hover:border-[#F2CED6] hover:bg-[#FCF0F2] hover:text-[#A24156] active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#A24156] focus-visible:ring-offset-2 focus-visible:ring-offset-white touch-manipulation"
+          >
+            <Trash2 className="h-4 w-4" aria-hidden="true" />
+          </button>
         </div>
 
-        <h3 className="mt-3 font-serif text-lg font-bold leading-snug text-[#1F2421] transition-colors group-hover:text-[#4A6B53] sm:text-xl line-clamp-2">
-          {recipe.title}
+        <h3 className="mt-3 font-serif text-lg font-bold leading-snug text-[#1F2421] transition-colors group-hover:text-[#4A6B53] sm:text-xl">
+          <a
+            href={recipeHref}
+            onClick={(event) => {
+              if (!recipe.isStaticBuilt && recipe.fullRecipe) {
+                event.preventDefault();
+                requestOpenInstantRecipe(recipe.fullRecipe);
+              }
+            }}
+            className="block focus:outline-none after:absolute after:inset-0 after:z-0"
+          >
+            <span className="line-clamp-2">{recipe.title}</span>
+          </a>
         </h3>
 
         <p className="mt-2 flex-1 text-sm leading-relaxed text-[#1F2421]/70 line-clamp-3">
@@ -286,7 +322,7 @@ function RecipeCard({ recipe, priority = false }: RecipeCardProps) {
           </span>
         </div>
       </div>
-    </a>
+    </article>
   );
 }
 
@@ -382,7 +418,17 @@ export default function RecipeCatalog({ recipes }: RecipeCatalogProps) {
     useState<CategoryFilter>(ALL_CATEGORY);
   const [sortBy, setSortBy] = useState<SortOption>('newest');
   const [instantRecipes, setInstantRecipes] = useState<Recipe[]>([]);
+  const [deletedSlugs, setDeletedSlugs] = useState<string[]>([]);
+  const [recipeToDelete, setRecipeToDelete] =
+    useState<DeleteRecipePreview | null>(null);
+  const [isDeletingRecipe, setIsDeletingRecipe] = useState(false);
+  const [deleteError, setDeleteError] = useState<{
+    message: string;
+    code?: string;
+  } | null>(null);
+  const [deleteNotice, setDeleteNotice] = useState<string | null>(null);
 
+  const deleteNoticeTimerRef = useRef<number | null>(null);
   const deferredSearchQuery = useDeferredValue(searchQuery);
 
   const staticSlugs = useMemo(
@@ -392,47 +438,78 @@ export default function RecipeCatalog({ recipes }: RecipeCatalogProps) {
 
   useEffect(() => {
     pruneBuiltInstantRecipes(staticSlugs);
+    pruneDeletedRecipes(staticSlugs);
 
     function syncInstantRecipes() {
       const stored = getStoredInstantRecipes();
       setInstantRecipes(stored.map((entry) => entry.recipe));
     }
 
+    function syncDeletedRecipes() {
+      const stored = getStoredDeletedRecipes();
+      setDeletedSlugs(stored.map((entry) => entry.slug));
+    }
+
     syncInstantRecipes();
+    syncDeletedRecipes();
 
     function handleRecipeAdded() {
       syncInstantRecipes();
+      syncDeletedRecipes();
+    }
+
+    function handleRecipeDeleted() {
+      syncInstantRecipes();
+      syncDeletedRecipes();
     }
 
     function handleStorage(event: StorageEvent) {
       if (event.key === INSTANT_RECIPES_STORAGE_KEY) {
         syncInstantRecipes();
+      } else if (event.key === DELETED_RECIPES_STORAGE_KEY) {
+        syncDeletedRecipes();
       }
     }
 
     window.addEventListener(RECIPE_ADDED_EVENT, handleRecipeAdded);
+    window.addEventListener(RECIPE_DELETED_EVENT, handleRecipeDeleted);
     window.addEventListener('storage', handleStorage);
     return () => {
       window.removeEventListener(RECIPE_ADDED_EVENT, handleRecipeAdded);
+      window.removeEventListener(RECIPE_DELETED_EVENT, handleRecipeDeleted);
       window.removeEventListener('storage', handleStorage);
     };
   }, [staticSlugs]);
 
+  useEffect(() => {
+    return () => {
+      if (deleteNoticeTimerRef.current !== null) {
+        window.clearTimeout(deleteNoticeTimerRef.current);
+      }
+    };
+  }, []);
+
   const mergedRecipes = useMemo<CatalogRecipe[]>(() => {
+    const deletedSlugSet = new Set(deletedSlugs);
     const instantSlugSet = new Set(instantRecipes.map((recipe) => recipe.slug));
 
     const dynamicTopItems: CatalogRecipe[] = instantRecipes
-      .filter((recipe) => !staticSlugs.has(recipe.slug))
+      .filter(
+        (recipe) =>
+          !staticSlugs.has(recipe.slug) && !deletedSlugSet.has(recipe.slug)
+      )
       .map((recipe) => toCatalogRecipeFromFull(recipe));
 
-    const staticItems: CatalogRecipe[] = recipes.map((recipe) => ({
-      ...recipe,
-      isStaticBuilt: true,
-      isInstantNew: instantSlugSet.has(recipe.slug),
-    }));
+    const staticItems: CatalogRecipe[] = recipes
+      .filter((recipe) => !deletedSlugSet.has(recipe.slug))
+      .map((recipe) => ({
+        ...recipe,
+        isStaticBuilt: true,
+        isInstantNew: instantSlugSet.has(recipe.slug),
+      }));
 
     return [...dynamicTopItems, ...staticItems];
-  }, [instantRecipes, recipes, staticSlugs]);
+  }, [deletedSlugs, instantRecipes, recipes, staticSlugs]);
 
   const indexedRecipes = useMemo<IndexedRecipe[]>(() => {
     return mergedRecipes.map((recipe) => {
@@ -519,8 +596,96 @@ export default function RecipeCatalog({ recipes }: RecipeCatalogProps) {
     setSelectedCategory(ALL_CATEGORY);
   }
 
+  function handleRequestDelete(recipe: CatalogRecipe) {
+    const mainImage =
+      recipe.images.find((img) => img.isMain) ?? recipe.images[0];
+    setDeleteError(null);
+    setRecipeToDelete({
+      slug: recipe.slug,
+      title: recipe.title,
+      category: recipe.category,
+      totalTimeMinutes: recipe.totalTimeMinutes,
+      imageUrl: mainImage?.url,
+      imageCaption: mainImage?.caption,
+    });
+  }
+
+  function handleCancelDelete() {
+    if (isDeletingRecipe) {
+      return;
+    }
+    setRecipeToDelete(null);
+    setDeleteError(null);
+  }
+
+  function handleOpenSettingsFromDelete() {
+    setRecipeToDelete(null);
+    setDeleteError(null);
+    requestOpenAddRecipeModal({ initialView: 'settings' });
+  }
+
+  async function handleConfirmDelete(target: DeleteRecipePreview) {
+    if (isDeletingRecipe) {
+      return;
+    }
+
+    setIsDeletingRecipe(true);
+    setDeleteError(null);
+
+    try {
+      await dispatchDeleteRecipeWorkflow(target.slug);
+      markRecipeAsDeleted(target.slug);
+      setRecipeToDelete(null);
+      setDeleteNotice(
+        `Usunięto przepis „${target.title}”. Zmiana zapisuje się w repozytorium (strona statyczna zaktualizuje się w tle za ok. 1–2 min).`
+      );
+      if (deleteNoticeTimerRef.current !== null) {
+        window.clearTimeout(deleteNoticeTimerRef.current);
+      }
+      deleteNoticeTimerRef.current = window.setTimeout(() => {
+        setDeleteNotice(null);
+      }, 9000);
+    } catch (error) {
+      if (error instanceof GitHubApiError) {
+        setDeleteError({ message: error.message, code: error.code });
+      } else {
+        setDeleteError({
+          message:
+            'Wystąpił nieoczekiwany błąd podczas zlecania usunięcia przepisu.',
+          code: 'UNKNOWN',
+        });
+      }
+    } finally {
+      setIsDeletingRecipe(false);
+    }
+  }
+
   return (
     <section aria-label="Katalog przepisów" className="pb-10">
+      {deleteNotice ? (
+        <div
+          role="status"
+          aria-live="polite"
+          className="catalog-item-enter mb-5 flex items-center justify-between gap-3 rounded-2xl border border-[#C9DBC9] bg-[#EDF3EE] px-4 py-3.5 text-xs font-semibold text-[#3B5542] shadow-sm sm:text-sm"
+        >
+          <div className="flex items-center gap-2.5">
+            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-[#4A6B53] text-white">
+              <CheckCircle2 className="h-4 w-4" aria-hidden="true" />
+            </div>
+            <span>{deleteNotice}</span>
+          </div>
+
+          <button
+            type="button"
+            onClick={() => setDeleteNotice(null)}
+            aria-label="Zamknij powiadomienie"
+            className="flex min-h-[36px] min-w-[36px] shrink-0 cursor-pointer items-center justify-center rounded-lg text-[#3B5542]/70 transition-colors hover:bg-[#4A6B53]/10 hover:text-[#3B5542] touch-manipulation"
+          >
+            <X className="h-4 w-4" aria-hidden="true" />
+          </button>
+        </div>
+      ) : null}
+
       {/* Search and sort controls */}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
         <div className="relative flex-1">
@@ -693,6 +858,7 @@ export default function RecipeCatalog({ recipes }: RecipeCatalogProps) {
               key={recipe.slug}
               recipe={recipe}
               priority={index < 3}
+              onRequestDelete={handleRequestDelete}
             />
           ))}
         </div>
@@ -704,6 +870,15 @@ export default function RecipeCatalog({ recipes }: RecipeCatalogProps) {
           onResetFilters={handleResetFilters}
         />
       )}
+
+      <DeleteRecipeModal
+        recipe={recipeToDelete}
+        isDeleting={isDeletingRecipe}
+        error={deleteError}
+        onCancel={handleCancelDelete}
+        onConfirm={handleConfirmDelete}
+        onOpenSettings={handleOpenSettingsFromDelete}
+      />
     </section>
   );
 }

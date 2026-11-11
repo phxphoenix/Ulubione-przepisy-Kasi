@@ -1,0 +1,121 @@
+name: Usuń przepis
+
+on:
+  workflow_dispatch:
+    inputs:
+      recipe_slug:
+        description: "Slug (identyfikator) przepisu do usunięcia"
+        required: true
+        type: string
+
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+
+jobs:
+  delete-recipe:
+    name: Usuń przepis z repozytorium
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    outputs:
+      changed: ${{ steps.delete.outputs.changed }}
+      deleted_slug: ${{ steps.delete.outputs.deleted_slug }}
+
+    steps:
+      - name: Pobierz najnowszą gałąź main
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: Skonfiguruj Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Usuń plik przepisu i nieużywane zdjęcia (delete_recipe.py)
+        id: delete
+        env:
+          RECIPE_SLUG: ${{ inputs.recipe_slug }}
+        run: |
+          python scripts/delete_recipe.py --slug "$RECIPE_SLUG"
+
+      - name: Zatwierdź i wypchnij usunięcie na gałąź main
+        if: steps.delete.outputs.changed == 'true'
+        env:
+          RECIPE_SLUG: ${{ inputs.recipe_slug }}
+        run: |
+          git config user.name "Kasia AI Chef"
+          git config user.email "kasia-ai-chef@users.noreply.github.com"
+          git add -A src/content/recipes/ public/images/recipes/
+          if git diff --cached --quiet; then
+            echo "Brak zmian do zatwierdzenia."
+            exit 0
+          fi
+          git commit -m "chore(recipe): usunięto przepis ${RECIPE_SLUG}"
+          for attempt in 1 2 3; do
+            git pull --rebase origin main
+            if git push origin main; then
+              break
+            fi
+            if [ "$attempt" -eq 3 ]; then
+              echo "::error::Nie udało się wypchnąć zmian po 3 próbach."
+              exit 1
+            fi
+            sleep 2
+          done
+
+      - name: Podsumowanie usuniętego przepisu
+        if: (!cancelled()) && steps.delete.outputs.deleted_slug != ''
+        run: |
+          {
+            echo "### Usuwanie przepisu"
+            echo "- **Slug:** \`${{ steps.delete.outputs.deleted_slug }}\`"
+            echo "- **Zmodyfikowano repozytorium:** \`${{ steps.delete.outputs.changed }}\`"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+  deploy-gh-pages:
+    name: Zbuduj i wdróż na GitHub Pages
+    needs: delete-recipe
+    if: needs.delete-recipe.outputs.changed == 'true'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+    concurrency:
+      group: "pages"
+      cancel-in-progress: false
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+
+    steps:
+      - name: Pobierz zaktualizowaną gałąź main
+        uses: actions/checkout@v4
+        with:
+          ref: main
+
+      - name: Skonfiguruj Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: "npm"
+
+      - name: Zainstaluj zależności i zbuduj Astro
+        env:
+          GITHUB_ACTIONS: "true"
+        run: |
+          npm ci
+          npm run build
+
+      - name: Prześlij artefakt GitHub Pages
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: ./dist
+
+      - name: Wdróż na GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

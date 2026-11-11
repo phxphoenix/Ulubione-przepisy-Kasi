@@ -852,8 +852,8 @@ export default function AddRecipeModal({
                       </p>
                       <ul className="mt-1 list-disc space-y-0.5 pl-4">
                         <li>
-                          <strong>Actions:</strong> Read and write (uruchamianie i
-                          śledzenie workflowu)
+                          <strong>Actions:</strong> Read and write (dodawanie i
+                          usuwanie przepisów oraz śledzenie postępu)
                         </li>
                         <li>
                           <strong>Contents:</strong> Read-only (Instant Preview

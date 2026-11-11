@@ -27,6 +27,7 @@ export const GITHUB_CONFIG = {
   owner: 'phxphoenix',
   repo: 'Ulubione-przepisy-Kasi',
   workflowFile: 'add-recipe.yml',
+  deleteWorkflowFile: 'delete-recipe.yml',
   branch: 'main',
   tokenStorageKey: 'kasia_gh_token',
   recipesDirPath: 'src/content/recipes',
@@ -331,7 +332,10 @@ async function parseErrorMessage(response: Response): Promise<string> {
   return response.statusText || `HTTP ${response.status}`;
 }
 
-async function mapGitHubResponseError(response: Response): Promise<GitHubApiError> {
+async function mapGitHubResponseError(
+  response: Response,
+  workflowFile: string = GITHUB_CONFIG.workflowFile
+): Promise<GitHubApiError> {
   const details = await parseErrorMessage(response);
   const status = response.status;
 
@@ -364,7 +368,7 @@ async function mapGitHubResponseError(response: Response): Promise<GitHubApiErro
 
   if (status === 404) {
     return new GitHubApiError(
-      `Nie znaleziono zasobu w repozytorium ${GITHUB_CONFIG.owner}/${GITHUB_CONFIG.repo} (404). Sprawdź dostęp tokenu i istnienie pliku workflow ${GITHUB_CONFIG.workflowFile}.`,
+      `Nie znaleziono zasobu w repozytorium ${GITHUB_CONFIG.owner}/${GITHUB_CONFIG.repo} (404). Sprawdź dostęp tokenu i istnienie pliku workflow ${workflowFile}.`,
       'NOT_FOUND',
       status,
       details
@@ -451,13 +455,51 @@ export async function dispatchAddRecipeWorkflow(
   }
 }
 
+export async function dispatchDeleteRecipeWorkflow(
+  recipeSlug: string,
+  tokenOverride?: string
+): Promise<void> {
+  const trimmedSlug = recipeSlug.trim();
+  if (!trimmedSlug) {
+    throw new GitHubApiError(
+      'Nieprawidłowy identyfikator przepisu do usunięcia.',
+      'VALIDATION'
+    );
+  }
+
+  const token = requireToken(tokenOverride);
+  const url = repoApiUrl(
+    `/actions/workflows/${GITHUB_CONFIG.deleteWorkflowFile}/dispatches`
+  );
+
+  const response = await githubFetch(url, {
+    method: 'POST',
+    headers: buildHeaders(token, { includeJsonContentType: true }),
+    body: JSON.stringify({
+      ref: GITHUB_CONFIG.branch,
+      inputs: {
+        recipe_slug: trimmedSlug,
+      },
+    }),
+  });
+
+  if (!response.ok) {
+    throw await mapGitHubResponseError(
+      response,
+      GITHUB_CONFIG.deleteWorkflowFile
+    );
+  }
+}
+
 export async function fetchWorkflowDispatchRuns(
   perPage = 3,
   tokenOverride?: string
 ): Promise<GitHubWorkflowRun[]> {
   const token = requireToken(tokenOverride);
   const url = appendCacheBust(
-    repoApiUrl(`/actions/runs?event=workflow_dispatch&per_page=${perPage}`)
+    repoApiUrl(
+      `/actions/workflows/${GITHUB_CONFIG.workflowFile}/runs?event=workflow_dispatch&per_page=${perPage}`
+    )
   );
 
   const response = await githubFetch(url, {

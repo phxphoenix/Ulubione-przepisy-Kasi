@@ -1,11 +1,13 @@
 import type { Recipe } from '../types/recipe';
 
 export const INSTANT_RECIPES_STORAGE_KEY = 'kasia_instant_recipes';
+export const DELETED_RECIPES_STORAGE_KEY = 'kasia_deleted_recipes';
 export const TRACKER_JOB_STORAGE_KEY = 'kasia_recipe_tracker_job';
 
 export const OPEN_ADD_RECIPE_EVENT = 'kasia:open-add-recipe';
 export const OPEN_INSTANT_RECIPE_EVENT = 'kasia:open-instant-recipe';
 export const RECIPE_ADDED_EVENT = 'kasia:recipe-added';
+export const RECIPE_DELETED_EVENT = 'kasia:recipe-deleted';
 export const TRACKER_JOB_CHANGED_EVENT = 'kasia:tracker-job-changed';
 
 export type TrackerStage =
@@ -36,6 +38,11 @@ export interface StoredInstantRecipe {
   addedAt: number;
 }
 
+export interface StoredDeletedRecipe {
+  slug: string;
+  deletedAt: number;
+}
+
 export interface OpenAddRecipeDetail {
   initialView?: 'form' | 'settings';
   prefillUrl?: string;
@@ -43,9 +50,23 @@ export interface OpenAddRecipeDetail {
 
 const MAX_INSTANT_RECIPES = 15;
 const RECENT_STATIC_BADGE_WINDOW_MS = 10 * 60 * 1000;
+const MIN_DELETED_RETENTION_MS = 5 * 60 * 1000;
+const MAX_DELETED_RETENTION_MS = 15 * 60 * 1000;
 
 function isBrowser(): boolean {
   return typeof window !== 'undefined';
+}
+
+function writeJsonStorageList<T>(key: string, items: T[]): void {
+  try {
+    if (items.length === 0) {
+      window.localStorage.removeItem(key);
+    } else {
+      window.localStorage.setItem(key, JSON.stringify(items));
+    }
+  } catch {
+    // Ignore storage quota or private browsing errors
+  }
 }
 
 export function getStoredInstantRecipes(): StoredInstantRecipe[] {
@@ -74,6 +95,32 @@ export function getStoredInstantRecipes(): StoredInstantRecipe[] {
   }
 }
 
+export function getStoredDeletedRecipes(): StoredDeletedRecipe[] {
+  if (!isBrowser()) {
+    return [];
+  }
+  try {
+    const raw = window.localStorage.getItem(DELETED_RECIPES_STORAGE_KEY);
+    if (!raw) {
+      return [];
+    }
+    const parsed: unknown = JSON.parse(raw);
+    if (!Array.isArray(parsed)) {
+      return [];
+    }
+    return parsed.filter(
+      (item): item is StoredDeletedRecipe =>
+        typeof item === 'object' &&
+        item !== null &&
+        typeof (item as StoredDeletedRecipe).slug === 'string' &&
+        (item as StoredDeletedRecipe).slug.trim().length > 0 &&
+        typeof (item as StoredDeletedRecipe).deletedAt === 'number'
+    );
+  } catch {
+    return [];
+  }
+}
+
 export function saveInstantRecipe(recipe: Recipe): StoredInstantRecipe[] {
   if (!isBrowser()) {
     return [];
@@ -86,19 +133,50 @@ export function saveInstantRecipe(recipe: Recipe): StoredInstantRecipe[] {
     ...existing,
   ].slice(0, MAX_INSTANT_RECIPES);
 
-  try {
-    window.localStorage.setItem(
-      INSTANT_RECIPES_STORAGE_KEY,
-      JSON.stringify(updated)
-    );
-  } catch {
-    // Ignore storage quota issues
-  }
+  writeJsonStorageList(INSTANT_RECIPES_STORAGE_KEY, updated);
+
+  // If a recipe with this slug was previously deleted, ensure it isn't suppressed.
+  const remainingDeleted = getStoredDeletedRecipes().filter(
+    (entry) => entry.slug !== recipe.slug
+  );
+  writeJsonStorageList(DELETED_RECIPES_STORAGE_KEY, remainingDeleted);
 
   window.dispatchEvent(
     new CustomEvent<Recipe>(RECIPE_ADDED_EVENT, { detail: recipe })
   );
   return updated;
+}
+
+export function markRecipeAsDeleted(slug: string): StoredDeletedRecipe[] {
+  if (!isBrowser()) {
+    return [];
+  }
+
+  const remainingInstant = getStoredInstantRecipes().filter(
+    (entry) => entry.recipe.slug !== slug
+  );
+  writeJsonStorageList(INSTANT_RECIPES_STORAGE_KEY, remainingInstant);
+
+  const activeTracker = getStoredTrackerJob();
+  if (activeTracker?.recipe?.slug === slug) {
+    saveTrackerJob(null);
+  }
+
+  const existingDeleted = getStoredDeletedRecipes().filter(
+    (entry) => entry.slug !== slug
+  );
+  const updatedDeleted: StoredDeletedRecipe[] = [
+    { slug, deletedAt: Date.now() },
+    ...existingDeleted,
+  ];
+  writeJsonStorageList(DELETED_RECIPES_STORAGE_KEY, updatedDeleted);
+
+  window.dispatchEvent(
+    new CustomEvent<{ slug: string }>(RECIPE_DELETED_EVENT, {
+      detail: { slug },
+    })
+  );
+  return updatedDeleted;
 }
 
 export function pruneBuiltInstantRecipes(staticSlugs: Set<string>): void {
@@ -114,18 +192,25 @@ export function pruneBuiltInstantRecipes(staticSlugs: Set<string>): void {
   );
 
   if (kept.length !== current.length) {
-    try {
-      if (kept.length === 0) {
-        window.localStorage.removeItem(INSTANT_RECIPES_STORAGE_KEY);
-      } else {
-        window.localStorage.setItem(
-          INSTANT_RECIPES_STORAGE_KEY,
-          JSON.stringify(kept)
-        );
-      }
-    } catch {
-      // Ignore storage errors
-    }
+    writeJsonStorageList(INSTANT_RECIPES_STORAGE_KEY, kept);
+  }
+}
+
+export function pruneDeletedRecipes(staticSlugs: Set<string>): void {
+  if (!isBrowser()) {
+    return;
+  }
+  const now = Date.now();
+  const current = getStoredDeletedRecipes();
+  const kept = current.filter((entry) => {
+    const age = now - entry.deletedAt;
+    return staticSlugs.has(entry.slug)
+      ? age < MAX_DELETED_RETENTION_MS
+      : age < MIN_DELETED_RETENTION_MS;
+  });
+
+  if (kept.length !== current.length) {
+    writeJsonStorageList(DELETED_RECIPES_STORAGE_KEY, kept);
   }
 }
 

@@ -5,6 +5,7 @@ import { consumeMagicLinkFromUrl } from '../utils/githubClient';
 import {
   OPEN_ADD_RECIPE_EVENT,
   OPEN_INSTANT_RECIPE_EVENT,
+  RECIPE_DELETED_EVENT,
   type OpenAddRecipeDetail,
 } from '../utils/instantRecipes';
 import { withBase } from '../utils/paths';
@@ -36,8 +37,13 @@ export default function RecipeWorkflowController({
   const [isHomePage, setIsHomePage] = useState(true);
 
   const pushedPreviewHistoryRef = useRef(false);
+  const activeInstantRecipeSlugRef = useRef<string | null>(null);
   const originalTitleRef = useRef<string>('');
   const pairingTimerRef = useRef<number | null>(null);
+
+  useEffect(() => {
+    activeInstantRecipeSlugRef.current = activeInstantRecipe?.slug ?? null;
+  }, [activeInstantRecipe]);
 
   const openModal = useCallback((detail?: OpenAddRecipeDetail) => {
     if (typeof window !== 'undefined') {
@@ -119,8 +125,17 @@ export default function RecipeWorkflowController({
       }
     }
 
+    function handleRecipeDeleted(event: Event) {
+      const custom = event as CustomEvent<{ slug?: string } | undefined>;
+      const deletedSlug = custom.detail?.slug;
+      if (deletedSlug && activeInstantRecipeSlugRef.current === deletedSlug) {
+        closeInstantPreview();
+      }
+    }
+
     window.addEventListener(OPEN_ADD_RECIPE_EVENT, handleOpenModalEvent);
     window.addEventListener(OPEN_INSTANT_RECIPE_EVENT, handleOpenInstantEvent);
+    window.addEventListener(RECIPE_DELETED_EVENT, handleRecipeDeleted);
     window.addEventListener('popstate', handlePopState);
 
     return () => {
@@ -129,12 +144,13 @@ export default function RecipeWorkflowController({
         OPEN_INSTANT_RECIPE_EVENT,
         handleOpenInstantEvent
       );
+      window.removeEventListener(RECIPE_DELETED_EVENT, handleRecipeDeleted);
       window.removeEventListener('popstate', handlePopState);
       if (pairingTimerRef.current !== null) {
         window.clearTimeout(pairingTimerRef.current);
       }
     };
-  }, [openInstantPreview, openModal]);
+  }, [closeInstantPreview, openInstantPreview, openModal]);
 
   // Hide static Astro slot content and update page title while Instant Preview detail view is open
   useEffect(() => {
