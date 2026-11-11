@@ -1,0 +1,160 @@
+{
+  "id": "rigatoni-alla-vodka",
+  "slug": "rigatoni-alla-vodka",
+  "title": "Kremowe rigatoni alla vodka z chili i parmezanem",
+  "summary": "Aksamitny, głęboko pomidorowy sos z nutą karmelizowanej szalotki, płatków chili i świeżo tartego parmezanu, perfekcyjnie oblepiający gruby makaron rigatoni.",
+  "category": "Dania główne",
+  "tags": ["Włoska", "Makaron", "Wegetariańskie", "Szybkie", "Kolacja"],
+  "prepTimeMinutes": 10,
+  "cookTimeMinutes": 20,
+  "totalTimeMinutes": 30,
+  "servings": 4,
+  "difficulty": "Łatwy",
+  "images": [
+    {
+      "url": "/images/recipes/rigatoni-main.jpg",
+      "caption": "Gotowe rigatoni alla vodka podane ze świeżą bazylią, parmezanem i płatkami chili",
+      "isMain": true
+    },
+    {
+      "url": "/images/recipes/rigatoni-step-sauce.jpg",
+      "caption": "Karmelizacja koncentratu pomidorowego z szalotką, czosnkiem i płatkami chili",
+      "isMain": false
+    },
+    {
+      "url": "/images/recipes/rigatoni-step-emulsion.jpg",
+      "caption": "Emulgowanie makaronu z sosem śmietanowo-pomidorowym, wodą z gotowania i parmezanem",
+      "isMain": false
+    }
+  ],
+  "videos": [
+    {
+      "url": "https://www.youtube.com/watch?v=R9K1wS0VwLA",
+      "platform": "youtube",
+      "embedUrl": "https://www.youtube.com/embed/R9K1wS0VwLA",
+      "title": "How To Make The Best Rigatoni Alla Vodka (Sip and Feast)"
+    }
+  ],
+  "ingredientGroups": [
+    {
+      "groupName": "Baza pomidorowo-śmietanowa",
+      "items": [
+        {
+          "name": "Oliwa z oliwek extra virgin",
+          "amount": 3,
+          "unit": "łyżki"
+        },
+        {
+          "name": "Masło niesolone",
+          "amount": 30,
+          "unit": "g",
+          "notes": "podzielone na 2 części"
+        },
+        {
+          "name": "Szalotka",
+          "amount": 2,
+          "unit": "szt.",
+          "notes": "drobno posiekana (można zastąpić małą cebulą)"
+        },
+        {
+          "name": "Czosnek",
+          "amount": 3,
+          "unit": "ząbki",
+          "notes": "cienko pokrojony lub przeciśnięty"
+        },
+        {
+          "name": "Płatki chili (peperoncino)",
+          "amount": 0.5,
+          "unit": "łyżeczki",
+          "notes": "lub więcej do smaku"
+        },
+        {
+          "name": "Podwójnie zagęszczony koncentrat pomidorowy",
+          "amount": 150,
+          "unit": "g",
+          "notes": "najlepiej w tubce lub słoiczku o wysokiej ekstrakcji"
+        },
+        {
+          "name": "Wódka czysta",
+          "amount": 80,
+          "unit": "ml"
+        },
+        {
+          "name": "Śmietanka kremówka 30% lub 36%",
+          "amount": 240,
+          "unit": "ml"
+        }
+      ]
+    },
+    {
+      "groupName": "Makaron i wykończenie",
+      "items": [
+        {
+          "name": "Makaron rigatoni",
+          "amount": 450,
+          "unit": "g",
+          "notes": "najlepiej tłoczony z brązu (al bronzo)"
+        },
+        {
+          "name": "Parmezan (Parmigiano Reggiano)",
+          "amount": 75,
+          "unit": "g",
+          "notes": "drobno starty + dodatkowo do posypania"
+        },
+        {
+          "name": "Świeża bazylia",
+          "amount": 1,
+          "unit": "garść",
+          "notes": "porwane listki"
+        },
+        {
+          "name": "Sól morska i świeżo mielony czarny pieprz",
+          "amount": null,
+          "notes": "do smaku oraz do osolenia wody na makaron"
+        }
+      ]
+    }
+  ],
+  "steps": [
+    {
+      "stepNumber": 1,
+      "title": "Zeszklenie bazy aromatycznej",
+      "instruction": "Na dużej, głębokiej patelni rozgrzej oliwę wraz z połową masła (15 g) na średnim ogniu. Dodaj drobno posiekaną szalotkę i szczyptę soli. Smaż przez 4–5 minut, często mieszając, aż zmięknie i stanie się szklista bez mocnego rumienienia. Dorzuć czosnek oraz płatki chili i smaż jeszcze przez minutę.",
+      "tip": "Szalotka powinna jedynie zmięknąć – przypalony czosnek nada sosowi goryczy."
+    },
+    {
+      "stepNumber": 2,
+      "title": "Karmelizacja koncentratu pomidorowego",
+      "instruction": "Dodaj cały koncentrat pomidorowy na patelnię. Zmniejsz ogień na średnio-niski i smaż koncentrat przez 5–7 minut, nieustannie rozcierając go drewnianą łyżką, aż zmieni kolor z jasnoczerwonego na głęboki ceglasty i lekko przywrze do dna.",
+      "tip": "Ten etap odpowiada za głębokie umami – karmelizowane cukry z pomidorów tracą surową kwasowość.",
+      "imageUrl": "/images/recipes/rigatoni-step-sauce.jpg"
+    },
+    {
+      "stepNumber": 3,
+      "title": "Deglasowanie wódką i redukcja ze śmietanką",
+      "instruction": "Zdejmij patelnię na chwilę z palnika i ostrożnie wlej wódkę, zeskrobując z dna przyrumienione drobinki smaku. Postaw z powrotem na małym ogniu i gotuj przez około 2 minuty, aż zapach alkoholu odparuje. Następnie wlej śmietankę kremówkę, dokładnie wymieszaj do uzyskania jednolitego pomarańczowego sosu i zestaw z palnika do czasu ugotowania makaronu."
+    },
+    {
+      "stepNumber": 4,
+      "title": "Gotowanie makaronu al dente",
+      "instruction": "W dużym garnku zagotuj osoloną wodę (użyj nieco mniej wody niż zwykle, aby miała wyższe stężenie skrobi). Wrzuć rigatoni i gotuj o 1–2 minuty krócej niż wskazuje instrukcja na opakowaniu. Przed odcedzeniem odlej co najmniej 250 ml gorącej wody z gotowania."
+    },
+    {
+      "stepNumber": 5,
+      "title": "Emulgowanie i wykończenie na patelni",
+      "instruction": "Przełóż niedogotowany makaron prosto na patelnię z sosem na małym ogniu. Dolej około 120 ml wody z gotowania oraz pozostałe 15 g zimnego masła. Energicznie mieszaj przez 2 minuty, aż sos zgęstnieje i idealnie oblepi rurki. Zdejmij z ognia, wmieszaj drobno starty parmezan (w razie potrzeby dolewając jeszcze odrobinę wody makaronowej), dopraw solą i pieprzem, a na końcu posyp świeżą bazylią.",
+      "tip": "Zawsze dodawaj parmezan poza palnikiem – zbyt wysoka temperatura sprawi, że ser zbije się w nitki zamiast stworzyć jedwabistą emulsję.",
+      "imageUrl": "/images/recipes/rigatoni-step-emulsion.jpg"
+    }
+  ],
+  "chefTips": [
+    "Alkohol rozpuszcza lotne związki aromatyczne w pomidorach, które nie są rozpuszczalne ani w wodzie, ani w tłuszczu – dlatego wódka wyraźnie podbija smak sosu bez pozostawiania alkoholowego posmaku.",
+    "Makaron rigatoni z matową powierzchnią (tłoczony na matrycach z brązu) oddaje do wody więcej skrobi i znacznie lepiej utrzymuje kremowy sos niż gładki makaron z matryc teflonowych.",
+    "Zawsze zestaw patelnię z ognia przed wlaniem wódki, szczególnie na kuchence gazowej, aby opary nie zapaliły się nad płomieniem.",
+    "Sos najlepiej smakuje bezpośrednio po przygotowaniu; przy ewentualnym odgrzewaniu rozcieńcz go 2–3 łyżkami gorącej wody."
+  ],
+  "sourceUrl": "https://www.seriouseats.com/penne-alla-vodka-recipe",
+  "sourceDomain": "seriouseats.com",
+  "originalLanguage": "en",
+  "createdAt": "2026-11-11T19:30:00.000Z"
+}

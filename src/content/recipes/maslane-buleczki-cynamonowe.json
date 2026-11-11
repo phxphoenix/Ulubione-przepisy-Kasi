@@ -1,0 +1,178 @@
+{
+  "id": "maslane-buleczki-cynamonowe",
+  "slug": "maslane-buleczki-cynamonowe",
+  "title": "Maślane bułeczki cynamonowe z lukrem serkowym",
+  "summary": "Wyjątkowo puszyste i miękkie zawijańce drożdżowe z korzennym nadzieniem z cynamonu cejlońskiego oraz kardamonu, wykończone aksamitnym kremem waniliowym.",
+  "category": "Desery i wypieki",
+  "tags": ["Wypieki", "Drożdżowe", "Cynamon", "Na słodko", "Weekend"],
+  "prepTimeMinutes": 35,
+  "cookTimeMinutes": 25,
+  "totalTimeMinutes": 150,
+  "servings": 12,
+  "difficulty": "Średni",
+  "images": [
+    {
+      "url": "/images/recipes/cynamonki-main.jpg",
+      "caption": "Świeżo upieczone bułeczki cynamonowe obficie polane lukrem z serka kremowego",
+      "isMain": true
+    },
+    {
+      "url": "/images/recipes/cynamonki-step-rolls.jpg",
+      "caption": "Wyrośnięte ślimaczki ułożone ciasno w formie przed włożeniem do piekarnika",
+      "isMain": false
+    }
+  ],
+  "videos": [],
+  "ingredientGroups": [
+    {
+      "groupName": "Ciasto drożdżowe",
+      "items": [
+        {
+          "name": "Mąka pszenna typ 500 lub 550",
+          "amount": 550,
+          "unit": "g",
+          "notes": "plus odrobina do podsypania stolnicy"
+        },
+        {
+          "name": "Mleko pełne 3,2%",
+          "amount": 250,
+          "unit": "ml",
+          "notes": "letnie, ok. 37°C"
+        },
+        {
+          "name": "Masło niesolone",
+          "amount": 75,
+          "unit": "g",
+          "notes": "miękkie, w temperaturze pokojowej"
+        },
+        {
+          "name": "Drożdże świeże",
+          "amount": 25,
+          "unit": "g",
+          "notes": "lub 7 g drożdży suchych instant"
+        },
+        {
+          "name": "Cukier drobny",
+          "amount": 65,
+          "unit": "g"
+        },
+        {
+          "name": "Jajko rozmiar L",
+          "amount": 1,
+          "unit": "szt.",
+          "notes": "w temperaturze pokojowej"
+        },
+        {
+          "name": "Sól drobna",
+          "amount": 0.5,
+          "unit": "łyżeczki"
+        }
+      ]
+    },
+    {
+      "groupName": "Nadzienie cynamonowe",
+      "items": [
+        {
+          "name": "Masło niesolone",
+          "amount": 80,
+          "unit": "g",
+          "notes": "bardzo miękkie, do łatwego rozsmarowania"
+        },
+        {
+          "name": "Brązowy cukier trzcinowy (muscovado lub demerara)",
+          "amount": 130,
+          "unit": "g"
+        },
+        {
+          "name": "Cynamon cejloński mielony",
+          "amount": 2.5,
+          "unit": "łyżki"
+        },
+        {
+          "name": "Świeżo mielony kardamon",
+          "amount": 0.5,
+          "unit": "łyżeczki",
+          "notes": "opcjonalnie, dla skandynawskiego aromatu"
+        }
+      ]
+    },
+    {
+      "groupName": "Lukier z serka kremowego",
+      "items": [
+        {
+          "name": "Naturalny serek śmietankowy (typu Philadelphia)",
+          "amount": 120,
+          "unit": "g",
+          "notes": "w temperaturze pokojowej"
+        },
+        {
+          "name": "Masło niesolone",
+          "amount": 40,
+          "unit": "g",
+          "notes": "miękkie"
+        },
+        {
+          "name": "Cukier puder",
+          "amount": 100,
+          "unit": "g",
+          "notes": "przesiany"
+        },
+        {
+          "name": "Ekstrakt lub pasta waniliowa",
+          "amount": 1,
+          "unit": "łyżeczka"
+        },
+        {
+          "name": "Mleko lub śmietanka",
+          "amount": 1,
+          "unit": "łyżka",
+          "notes": "do regulacji gęstości polewy"
+        }
+      ]
+    }
+  ],
+  "steps": [
+    {
+      "stepNumber": 1,
+      "title": "Przygotowanie rozczynu i zagniecenie ciasta",
+      "instruction": "Rozkrusz świeże drożdże do miseczki, dodaj łyżkę cukru, 2 łyżki mąki i około 60 ml letniego mleka. Wymieszaj i odstaw na 10 minut, aż rozczyn wyraźnie się spieni. Do misy miksera wsyp resztę mąki, cukier, sól, wlej pozostałe mleko, dodaj jajko oraz wyrośnięty rozczyn. Wyrabiaj hakiem przez 5 minut, a następnie dodawaj partiami miękkie masło i wyrabiaj kolejne 7–8 minut, aż ciasto stanie się gładkie, elastyczne i zacznie odchodzić od ścianek misy.",
+      "tip": "Jeśli wyrabiasz ciasto ręcznie, nie dosypuj zbyt dużo mąki – ciasto powinno pozostać lekko klejące i bardzo miękkie, co zagwarantuje puszysty miękisz po upieczeniu."
+    },
+    {
+      "stepNumber": 2,
+      "title": "Pierwsze wyrastanie",
+      "instruction": "Uformuj z ciasta kulę, przełóż do lekko natłuszczonej miski, przykryj ściereczką lub folią spożywczą i odstaw w ciepłe miejsce na około 60 minut, aż podwoi swoją objętość."
+    },
+    {
+      "stepNumber": 3,
+      "title": "Wałkowanie, nakładanie nadzienia i zwijanie",
+      "instruction": "Wymieszaj brązowy cukier z cynamonem i kardamonem. Wyrośnięte ciasto krótko odgazuj i rozwałkuj na lekko oprószonym mąką blacie na prostokąt o wymiarach ok. 45 x 35 cm. Rozsmaruj równomiernie bardzo miękkie masło po całej powierzchni, zostawiając 1,5 cm wolnego brzegu wzdłuż jednego z dłuższych boków. Posyp mieszanką cynamonową i lekko dociśnij ją dłonią do masła. Zwiń ciasny rulon zaczynając od dłuższego boku z nadzieniem i sklej wolną krawędź."
+    },
+    {
+      "stepNumber": 4,
+      "title": "Krojenie i drugie wyrastanie",
+      "instruction": "Podziel rulon na 12 równych plastrów o grubości ok. 3,5 cm. Ułóż ślimaczki w ceramicznym naczyniu żaroodpornym (ok. 23 x 33 cm lub okrągłej formie 28 cm) wyłożonym papierem do pieczenia lub wysmarowanym masłem, zachowując niewielkie odstępy. Przykryj formę i odstaw na 35–45 minut do ponownego wyrośnięcia, aż bułeczki wypełnią wolną przestrzeń.",
+      "tip": "Do krojenia rulonu najlepiej użyć czystej, bezzapachowej nici dentystycznej lub bawełnianej nitki – wsuń ją pod ciasto, skrzyżuj końce u góry i zaciśnij, a ślimaczki zachowają idealny okrągły kształt.",
+      "imageUrl": "/images/recipes/cynamonki-step-rolls.jpg"
+    },
+    {
+      "stepNumber": 5,
+      "title": "Pieczenie",
+      "instruction": "Rozgrzej piekarnik do 180°C (góra–dół). Piecz wyrośnięte bułeczki na środkowej półce przez 22–26 minut, aż wierzch nabierze złocistobrązowego koloru. Jeśli wierzch zacznie rumienić się zbyt szybko po 18 minutach, przykryj go luźno arkuszem folii aluminiowej."
+    },
+    {
+      "stepNumber": 6,
+      "title": "Przygotowanie lukru i wykończenie",
+      "instruction": "W czasie pieczenia zmiksuj miękkie masło z serkiem śmietankowym na jednolitą masę, następnie dodaj przesiany cukier puder, wanilię i łyżkę mleka. Po wyjęciu bułeczek z piekarnika odczekaj 5–10 minut, a następnie obficie rozprowadź lukier na jeszcze ciepłych cynamonkach, aby lekko wniknął między warstwy ciasta."
+    }
+  ],
+  "chefTips": [
+    "Wszystkie składniki nabiałowe (masło, jajko, mleko) powinny mieć zbliżoną temperaturę pokojową/letnią – dzięki temu drożdże ruszą równomiernie, a masło łatwo połączy się z glutenem.",
+    "Użycie cynamonu cejlońskiego zamiast tańszego cynamonu cassia daje subtelniejszy, słodszy i bardziej cytrusowo-korzenny aromat bez nadmiernej ostrości.",
+    "Jeśli chcesz upiec bułeczki rano na świeże śniadanie, po pokrojeniu i ułożeniu w formie przykryj je szczelnie folią i wstaw na noc do lodówki; rano wyjmij je na blat na ok. 45 minut przed pieczeniem."
+  ],
+  "sourceUrl": "https://www.kwestiasmaku.com/przepis/buleczki-cynamonowe",
+  "sourceDomain": "kwestiasmaku.com",
+  "originalLanguage": "pl",
+  "createdAt": "2026-11-11T20:15:00.000Z"
+}
