@@ -25,6 +25,11 @@ from pydantic import BaseModel, Field, ValidationError, field_validator, model_v
 import requests
 from slugify import slugify
 
+try:
+    import httpx
+except ImportError:  # pragma: no cover
+    httpx = None
+
 REPO_ROOT = Path(__file__).resolve().parent.parent
 RECIPES_DIR = REPO_ROOT / "src" / "content" / "recipes"
 
@@ -32,10 +37,37 @@ GROQ_MODEL_CASCADE: tuple[str, ...] = (
     "llama-3.3-70b-versatile",
     "llama-3.1-8b-instant",
 )
+GROQ_FALLBACK_MODEL_PREFERENCES: tuple[str, ...] = (
+    "openai/gpt-oss-120b",
+    "meta-llama/llama-4-maverick-17b-128e-instruct",
+    "meta-llama/llama-4-scout-17b-16e-instruct",
+    "qwen/qwen3.8-27b",
+    "qwen/qwen3-32b",
+    "qwen-qwq-32b",
+    "deepseek-r1-distill-llama-70b",
+    "openai/gpt-oss-20b",
+    "gemma2-9b-it",
+)
+GROQ_EXCLUDED_MODEL_KEYWORDS: tuple[str, ...] = (
+    "whisper",
+    "tts",
+    "orpheus",
+    "playai",
+    "guard",
+    "safeguard",
+    "embed",
+    "rerank",
+    "moderation",
+    "classify",
+    "compound",
+)
 GEMINI_MODEL_CASCADE: tuple[str, ...] = (
     "gemini-2.5-flash",
     "gemini-2.5-flash-lite",
     "gemini-2.0-flash",
+    "gemini-3.8-flash",
+    "gemini-3.5-flash-lite",
+    "gemini-flash-latest",
 )
 MODEL_CASCADE = GEMINI_MODEL_CASCADE
 RETRY_DELAYS_SECONDS: tuple[float, ...] = (2.0, 5.0)
@@ -1463,7 +1495,7 @@ def _is_rate_limit_or_transient(exc: errors.APIError) -> bool:
 
 
 def _strip_code_fences(raw_text: str) -> str:
-    cleaned = raw_text.strip()
+    cleaned = re.sub(r"<think>.*?</think>", "", raw_text, flags=re.DOTALL).strip()
     if cleaned.startswith("```"):
         cleaned = re.sub(r"^```[a-zA-Z0-9_-]*\s*", "", cleaned)
         cleaned = re.sub(r"\s*```$", "", cleaned)
@@ -1489,13 +1521,72 @@ def _build_groq_system_instruction() -> str:
     )
 
 
+def _is_groq_chat_model(model_id: str) -> bool:
+    lowered = model_id.strip().lower()
+    if not lowered:
+        return False
+    return not any(keyword in lowered for keyword in GROQ_EXCLUDED_MODEL_KEYWORDS)
+
+
+def _resolve_groq_models(client: Groq) -> list[str]:
+    """Discover active chat models on the Groq account and order them by priority."""
+    default_models = list(
+        dict.fromkeys([*GROQ_MODEL_CASCADE, "openai/gpt-oss-120b", "openai/gpt-oss-20b"])
+    )
+    try:
+        models_response = client.models.list()
+    except groq.APIStatusError as exc:
+        if getattr(exc, "status_code", None) in {401, 403}:
+            raise
+        print(
+            f"[AI Agent] Nie udało się pobrać listy modeli Groq ({exc}); używam domyślnej listy.",
+            flush=True,
+        )
+        return default_models
+    except Exception as exc:
+        print(
+            f"[AI Agent] Nie udało się pobrać listy modeli Groq ({exc}); używam domyślnej listy.",
+            flush=True,
+        )
+        return default_models
+
+    raw_items = getattr(models_response, "data", None) or []
+    active_chat_ids: list[str] = []
+    for item in raw_items:
+        model_id = getattr(item, "id", None)
+        is_active = getattr(item, "active", True)
+        if isinstance(model_id, str) and is_active is not False and _is_groq_chat_model(model_id):
+            cleaned_id = model_id.strip()
+            if cleaned_id not in active_chat_ids:
+                active_chat_ids.append(cleaned_id)
+
+    if not active_chat_ids:
+        return default_models
+
+    available_set = set(active_chat_ids)
+    ordered: list[str] = []
+    for candidate in (*GROQ_MODEL_CASCADE, *GROQ_FALLBACK_MODEL_PREFERENCES):
+        if candidate in available_set and candidate not in ordered:
+            ordered.append(candidate)
+    for remaining in sorted(active_chat_ids):
+        if remaining not in ordered:
+            ordered.append(remaining)
+
+    print(
+        f"[AI Agent] Dostępne modele Groq na koncie: {', '.join(ordered)}",
+        flush=True,
+    )
+    return ordered
+
+
 def call_groq_with_fallback(groq_api_key: str, prompt: str) -> dict[str, Any]:
-    """Call Groq Cloud using model cascade (llama-3.3-70b-versatile -> llama-3.1-8b-instant)."""
+    """Call Groq Cloud using prioritized/discovered chat models with automatic failover."""
     client = Groq(api_key=groq_api_key, max_retries=0)
+    models_to_try = _resolve_groq_models(client)
     system_instruction = _build_groq_system_instruction()
     last_error: Optional[Exception] = None
 
-    for model_name in GROQ_MODEL_CASCADE:
+    for model_name in models_to_try:
         try:
             print(f"[AI Agent] Używam Groq: {model_name}", flush=True)
             response = client.chat.completions.create(
@@ -1568,100 +1659,155 @@ def call_groq_with_fallback(groq_api_key: str, prompt: str) -> dict[str, Any]:
             continue
 
     raise RuntimeError(
-        f"Wszystkie modele Groq ({', '.join(GROQ_MODEL_CASCADE)}) zawiodły. "
+        f"Wszystkie modele Groq ({', '.join(models_to_try)}) zawiodły. "
         f"Ostatni błąd: {last_error}"
     )
 
 
-def _create_gemini_client(gemini_api_key: str) -> tuple[genai.Client, str]:
-    """Initialize Gemini Developer API or Vertex AI Express client based on API key prefix."""
+def _create_gemini_clients(gemini_api_key: str) -> list[tuple[genai.Client, str]]:
+    """Return ordered Gemini clients to try (AI Studio keys can also use the 'AQ.' prefix)."""
+    clients: list[tuple[genai.Client, str]] = [
+        (genai.Client(api_key=gemini_api_key), "Google Gemini")
+    ]
     if gemini_api_key.startswith("AQ."):
-        return (
-            genai.Client(vertexai=True, api_key=gemini_api_key),
-            "Vertex AI Express (Gemini)",
+        clients.append(
+            (genai.Client(vertexai=True, api_key=gemini_api_key), "Vertex AI Express (Gemini)")
         )
-    return genai.Client(api_key=gemini_api_key), "Google Gemini"
+    return clients
+
+
+def _is_gemini_auth_error(exc: errors.APIError) -> bool:
+    code = getattr(exc, "code", None)
+    status = str(getattr(exc, "status", "") or "").upper()
+    msg = str(exc).upper()
+    return (
+        code in {401, 403}
+        or "PERMISSION_DENIED" in status
+        or "UNAUTHENTICATED" in status
+        or "API_KEY_INVALID" in msg
+        or "API KEY NOT VALID" in msg
+        or "INVALID API KEY" in msg
+    )
+
+
+def _is_gemini_model_unavailable(exc: errors.APIError) -> bool:
+    code = getattr(exc, "code", None)
+    if code == 404:
+        return True
+    if code == 400:
+        msg = str(exc).lower()
+        return any(tok in msg for tok in ("not found", "not supported", "deprecated", "unknown model"))
+    return False
+
+
+def _transport_exception_types() -> tuple[type[BaseException], ...]:
+    types_list: list[type[BaseException]] = [requests.RequestException, OSError, TimeoutError]
+    if httpx is not None:
+        types_list.append(httpx.HTTPError)
+    return tuple(types_list)
 
 
 def call_gemini_with_fallback(gemini_api_key: str, prompt: str) -> dict[str, Any]:
-    """Call Gemini / Vertex AI API using model cascade (2.5-flash -> 2.5-flash-lite -> 2.0-flash) with retry backoff."""
-    client, provider_label = _create_gemini_client(gemini_api_key)
+    """Call Gemini / Vertex AI Express API using model cascade with retry backoff."""
     config = types.GenerateContentConfig(
         system_instruction=SYSTEM_INSTRUCTION,
         response_mime_type="application/json",
         response_schema=Recipe,
     )
-
+    transport_errors = _transport_exception_types()
+    client_candidates = _create_gemini_clients(gemini_api_key)
     last_error: Optional[Exception] = None
 
-    for model_name in GEMINI_MODEL_CASCADE:
-        total_attempts = 1 + len(RETRY_DELAYS_SECONDS)
-        for attempt in range(total_attempts):
-            try:
-                print(
-                    f"[AI Agent] Używam {provider_label}: {model_name} "
-                    f"(próba {attempt + 1}/{total_attempts})",
-                    flush=True,
-                )
-                response = client.models.generate_content(
-                    model=model_name,
-                    contents=prompt,
-                    config=config,
-                )
+    for client_idx, (client, provider_label) in enumerate(client_candidates):
+        auth_failed_for_client = False
 
-                if isinstance(response.parsed, Recipe):
+        for model_name in GEMINI_MODEL_CASCADE:
+            total_attempts = 1 + len(RETRY_DELAYS_SECONDS)
+            for attempt in range(total_attempts):
+                try:
                     print(
-                        f"[AI Agent] Przepis wygenerowany przez {provider_label}: {model_name}",
+                        f"[AI Agent] Używam {provider_label}: {model_name} "
+                        f"(próba {attempt + 1}/{total_attempts})",
                         flush=True,
                     )
-                    return response.parsed.model_dump()
-
-                raw_text = response.text
-                if raw_text:
-                    parsed_dict = json.loads(_strip_code_fences(raw_text))
-                    print(
-                        f"[AI Agent] Przepis wygenerowany przez {provider_label}: {model_name}",
-                        flush=True,
+                    response = client.models.generate_content(
+                        model=model_name,
+                        contents=prompt,
+                        config=config,
                     )
-                    return parsed_dict
 
-                raise ValueError(f"Model {model_name} zwrócił pustą odpowiedź.")
+                    if isinstance(response.parsed, Recipe):
+                        print(
+                            f"[AI Agent] Przepis wygenerowany przez {provider_label}: {model_name}",
+                            flush=True,
+                        )
+                        return response.parsed.model_dump()
 
-            except errors.APIError as exc:
-                last_error = exc
-                code = getattr(exc, "code", None)
-                if code == 404:
-                    log_warn(f"Model {model_name} niedostępny (404), przełączanie na kolejny model...")
-                    break
-                if _is_rate_limit_or_transient(exc):
-                    if attempt < len(RETRY_DELAYS_SECONDS):
-                        suggested = _extract_server_retry_delay(exc)
-                        base_delay = suggested if suggested is not None else RETRY_DELAYS_SECONDS[attempt]
-                        wait_s = base_delay + random.uniform(0.2, 1.0)
+                    raw_text = response.text
+                    if raw_text:
+                        parsed_dict = json.loads(_strip_code_fences(raw_text))
+                        print(
+                            f"[AI Agent] Przepis wygenerowany przez {provider_label}: {model_name}",
+                            flush=True,
+                        )
+                        return parsed_dict
+
+                    raise ValueError(f"Model {model_name} zwrócił pustą odpowiedź.")
+
+                except errors.APIError as exc:
+                    last_error = exc
+                    code = getattr(exc, "code", None)
+                    if _is_gemini_auth_error(exc):
+                        if client_idx + 1 < len(client_candidates):
+                            log_warn(
+                                f"Brak autoryzacji/uprawnień w {provider_label} ({code}). "
+                                f"Przełączam na kolejny endpoint Gemini..."
+                            )
+                            auth_failed_for_client = True
+                            break
+                        raise
+                    if _is_gemini_model_unavailable(exc):
                         log_warn(
-                            f"Limit/błąd przejściowy ({code}) dla {model_name}. "
+                            f"Model {model_name} niedostępny ({code}), przełączanie na kolejny model..."
+                        )
+                        break
+                    if _is_rate_limit_or_transient(exc):
+                        if attempt < len(RETRY_DELAYS_SECONDS):
+                            suggested = _extract_server_retry_delay(exc)
+                            base_delay = (
+                                suggested if suggested is not None else RETRY_DELAYS_SECONDS[attempt]
+                            )
+                            wait_s = base_delay + random.uniform(0.2, 1.0)
+                            log_warn(
+                                f"Limit/błąd przejściowy ({code}) dla {model_name}. "
+                                f"Ponowienie za {wait_s:.1f}s..."
+                            )
+                            time.sleep(wait_s)
+                            continue
+                        log_warn(
+                            f"Wyczerpano limity/ponowienia dla modelu {model_name} ({code}). "
+                            f"Przełączanie na kolejny model..."
+                        )
+                        break
+                    raise
+                except (*transport_errors, json.JSONDecodeError, ValueError) as exc:
+                    last_error = exc
+                    if attempt < len(RETRY_DELAYS_SECONDS):
+                        wait_s = RETRY_DELAYS_SECONDS[attempt]
+                        log_warn(
+                            f"Błąd odpowiedzi/połączenia dla {model_name}: {exc}. "
                             f"Ponowienie za {wait_s:.1f}s..."
                         )
                         time.sleep(wait_s)
                         continue
-                    log_warn(
-                        f"Wyczerpano limity/ponowienia dla modelu {model_name} ({code}). "
-                        f"Przełączanie na kolejny model..."
-                    )
+                    log_warn(f"Przełączanie na kolejny model po błędzie {model_name}: {exc}")
                     break
-                raise
-            except (requests.RequestException, json.JSONDecodeError, ValueError) as exc:
-                last_error = exc
-                if attempt < len(RETRY_DELAYS_SECONDS):
-                    wait_s = RETRY_DELAYS_SECONDS[attempt]
-                    log_warn(f"Błąd odpowiedzi dla {model_name}: {exc}. Ponowienie za {wait_s:.1f}s...")
-                    time.sleep(wait_s)
-                    continue
-                log_warn(f"Przełączanie na kolejny model po błędzie {model_name}: {exc}")
+
+            if auth_failed_for_client:
                 break
 
     raise RuntimeError(
-        f"Wszystkie modele w kaskadzie {provider_label} ({', '.join(GEMINI_MODEL_CASCADE)}) zawiodły. "
+        f"Wszystkie modele w kaskadzie Gemini ({', '.join(GEMINI_MODEL_CASCADE)}) zawiodły. "
         f"Ostatni błąd: {last_error}"
     )
 
