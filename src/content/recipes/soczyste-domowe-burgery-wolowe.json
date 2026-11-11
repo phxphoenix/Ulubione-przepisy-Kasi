@@ -1,0 +1,186 @@
+{
+  "id": "soczyste-domowe-burgery-wolowe",
+  "slug": "soczyste-domowe-burgery-wolowe",
+  "title": "Soczyste domowe burgery wołowe",
+  "summary": "Pyszne, miękkie i niezwykle soczyste burgery wołowe przygotowane na patelni w zaledwie 20 minut. Doskonała alternatywa dla dań z restauracji, którą pokochają zarówno dorośli, jak i dzieci.",
+  "category": "Dania główne",
+  "tags": [
+    "burger",
+    "wołowina",
+    "obiad na szybko",
+    "fast food",
+    "danie jednogarnkowe"
+  ],
+  "prepTimeMinutes": 10,
+  "cookTimeMinutes": 12,
+  "totalTimeMinutes": 22,
+  "servings": 4.0,
+  "difficulty": "Łatwy",
+  "images": [
+    {
+      "url": "https://simplehomeedit.com/wp-content/uploads/2024/03/Homemade-Beef-Burgers-4.webp",
+      "caption": "Soczysty domowy burger wołowy z serem i warzywami w maślanej bułce brioche",
+      "isMain": true
+    },
+    {
+      "url": "https://simplehomeedit.com/wp-content/uploads/2024/03/Homemade-Beef-Burgers-7.webp",
+      "caption": "Domowe burgery podane z chrupiącymi pieczonymi ziemniakami",
+      "isMain": false
+    }
+  ],
+  "videos": [
+    {
+      "url": "https://www.youtube.com/watch?v=qVMikMUEA6c",
+      "platform": "youtube",
+      "embedUrl": "https://www.youtube-nocookie.com/embed/qVMikMUEA6c",
+      "title": "Jak przygotować soczyste burgery wołowe krok po kroku"
+    }
+  ],
+  "ingredientGroups": [
+    {
+      "groupName": "Kotlety burgerowe",
+      "items": [
+        {
+          "name": "mielone mięso wołowe",
+          "amount": 500.0,
+          "unit": "g"
+        },
+        {
+          "name": "bułka tarta panko",
+          "amount": 30.0,
+          "unit": "g",
+          "notes": "około 0.5 szklanki"
+        },
+        {
+          "name": "jajko",
+          "amount": 1.0,
+          "unit": "szt."
+        },
+        {
+          "name": "sos Worcestershire",
+          "amount": 1.0,
+          "unit": "łyżka"
+        },
+        {
+          "name": "ketchup",
+          "amount": 1.0,
+          "unit": "łyżka"
+        },
+        {
+          "name": "płatki soli morskiej",
+          "amount": 1.0,
+          "unit": "łyżeczka"
+        },
+        {
+          "name": "świeżo mielony czarny pieprz",
+          "amount": 0.5,
+          "unit": "łyżeczka"
+        },
+        {
+          "name": "oliwa z oliwek",
+          "amount": 2.0,
+          "unit": "łyżki",
+          "notes": "do smażenia"
+        },
+        {
+          "name": "woda",
+          "amount": 2.0,
+          "unit": "łyżki",
+          "notes": "opcjonalnie, do deglasowania patelni"
+        }
+      ]
+    },
+    {
+      "groupName": "Dodatki i podanie",
+      "items": [
+        {
+          "name": "bułki brioche do burgerów",
+          "amount": 4.0,
+          "unit": "szt.",
+          "notes": "przekrojone na pół i opieczone"
+        },
+        {
+          "name": "ser gouda lub ser topiony w plastrach",
+          "amount": 4.0,
+          "unit": "plastry"
+        },
+        {
+          "name": "pomidory",
+          "amount": 2.0,
+          "unit": "szt.",
+          "notes": "pokrojone w cienkie plastry"
+        },
+        {
+          "name": "czerwona cebula",
+          "amount": 1.0,
+          "unit": "szt.",
+          "notes": "pokrojona w cienkie piórka"
+        },
+        {
+          "name": "sałata rzymska baby",
+          "amount": 1.0,
+          "unit": "główka",
+          "notes": "liście umyte i osuszone"
+        },
+        {
+          "name": "ogórki konserwowe",
+          "amount": 2.0,
+          "unit": "łyżki",
+          "notes": "pokrojone w plasterki"
+        },
+        {
+          "name": "majonez",
+          "amount": 4.0,
+          "unit": "łyżeczki"
+        },
+        {
+          "name": "ketchup",
+          "amount": 4.0,
+          "unit": "łyżeczki"
+        },
+        {
+          "name": "musztarda amerykańska",
+          "amount": 4.0,
+          "unit": "łyżeczki",
+          "notes": "łagodna"
+        }
+      ]
+    }
+  ],
+  "steps": [
+    {
+      "stepNumber": 1,
+      "title": "Wymieszanie i uformowanie kotletów",
+      "instruction": "Do dużej miski przełóż mielone mięso wołowe, bułkę tartą panko, jajko, sos Worcestershire, ketchup, sól morską oraz pieprz. Wymieszaj składniki dłońmi tylko do połączenia – unikaj zbyt długiego wyrabiania. Podziel masę na 4 równe porcje (lub 6 mniejszych) i uformuj okrągłe kotlety o średnicy nieco większej niż przygotowane bułki, ponieważ skurczą się podczas smażenia.",
+      "tip": "Dodatek panko i jajka gwarantuje, że mięso zachowa wilgoć i nie wyschnie podczas obróbki cieplnej."
+    },
+    {
+      "stepNumber": 2,
+      "title": "Zrobienie wgłębienia w mięsie",
+      "instruction": "Kciukiem zrób delikatne wgłębienie na środku każdego kotleta z jednej strony.",
+      "tip": "To wgłębienie zapobiega wybrzuszaniu się kotleta w trakcie smażenia, dzięki czemu zachowa on równy, płaski kształt."
+    },
+    {
+      "stepNumber": 3,
+      "title": "Smażenie kotletów",
+      "instruction": "Na patelni z grubym dnem rozgrzej 2 łyżki oliwy na średnio-wysokim ogniu. Ułóż kotlety i smaż łącznie przez 10–12 minut, obracając je tylko raz w połowie czasu. Na ostatnie 2 minuty smażenia możesz dodać na patelnię 2 łyżki wody, aby zeskrobać przypieczone soki z dna patelni – przylgną one do mięsa, wzbogacając jego smak. Pod koniec smażenia połóż na każdym kotlecie plaster sera, aby delikatnie się rozpuścił.",
+      "tip": "Kotlety możesz przygotować również na ruszcie grilla lub patelni grillowej."
+    },
+    {
+      "stepNumber": 4,
+      "title": "Złożenie burgerów",
+      "instruction": "Opiecz połówki bułek brioche na suchej patelni lub w tosterze. Na dolne części bułek wyłóż sosy (majonez, ketchup i musztardę), liście sałaty, gorący kotlet z roztopionym serem, plastry pomidora, czerwoną cebulę oraz ogórki konserwowe. Przykryj górną częścią bułki i podawaj od razu.",
+      "tip": "Ułóż dodatki w miseczkach na stole, aby każdy mógł samodzielnie skomponować ulubiony zestaw smaków."
+    }
+  ],
+  "chefTips": [
+    "Aby przemycić więcej warzyw, możesz dodać do masy mięsnej do 1 szklanki drobno startej marchewki i cukinii (dobrze odciśniętej z nadmiaru soku) – idealnie wtapiają się w mięso.",
+    "Do burgerów najlepiej sprawdzi się mielona wołowina o zawartości tłuszczu 15–20% (np. z łopatki lub antrykotu), która zapewni soczystość.",
+    "Kotlety można uformować z wyprzedzeniem i przechowywać w lodówce do 3 dni lub zamrozić (przekładając papierem do pieczenia) do 3 miesięcy.",
+    "Jeśli przygotowujesz mini burgery (tzw. sliders), podziel masę na 12 małych porcji i smaż po 2–3 minuty z każdej strony."
+  ],
+  "sourceUrl": "https://simplehomeedit.com/recipe/homemade-beef-burger/",
+  "sourceDomain": "simplehomeedit.com",
+  "originalLanguage": "en",
+  "createdAt": "2026-11-11T22:40:06.869Z"
+}
