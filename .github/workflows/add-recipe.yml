@@ -45,6 +45,7 @@ jobs:
       - name: Uruchom Agenta AI (generate_recipe.py)
         id: generate
         env:
+          GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
           RECIPE_URL: ${{ inputs.recipe_url }}
         run: |

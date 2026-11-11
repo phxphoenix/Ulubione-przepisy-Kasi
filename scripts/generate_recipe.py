@@ -19,25 +19,32 @@ from urllib.parse import parse_qs, urljoin, urlparse
 from bs4 import BeautifulSoup, Tag
 from google import genai
 from google.genai import errors, types
-from pydantic import BaseModel, Field, field_validator, model_validator
+import groq
+from groq import Groq
+from pydantic import BaseModel, Field, ValidationError, field_validator, model_validator
 import requests
 from slugify import slugify
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 RECIPES_DIR = REPO_ROOT / "src" / "content" / "recipes"
 
-MODEL_CASCADE: tuple[str, ...] = (
-    "gemini-3.8-flash",
-    "gemini-3.5-flash-lite",
-    "gemini-flash-latest",
+GROQ_MODEL_CASCADE: tuple[str, ...] = (
+    "llama-3.3-70b-versatile",
+    "llama-3.1-8b-instant",
 )
+GEMINI_MODEL_CASCADE: tuple[str, ...] = (
+    "gemini-2.5-flash",
+    "gemini-2.5-flash-lite",
+    "gemini-2.0-flash",
+)
+MODEL_CASCADE = GEMINI_MODEL_CASCADE
 RETRY_DELAYS_SECONDS: tuple[float, ...] = (2.0, 5.0)
 JINA_RETRY_DELAYS_SECONDS: tuple[float, ...] = (2.0, 4.0)
 MAX_SERVER_RETRY_DELAY = 20.0
 REQUEST_TIMEOUT_HTML = 20
 REQUEST_TIMEOUT_JINA = 25
-MAX_PROMPT_TEXT_CHARS = 45000
-MAX_JSONLD_CHARS = 24000
+REQUEST_TIMEOUT_GROQ = 60.0
+MAX_PROMPT_TEXT_CHARS = 12000
 MAX_IMAGE_CANDIDATES = 25
 MIN_IMAGE_DIMENSION_PX = 200
 JINA_TRANSIENT_STATUS_CODES = frozenset({429, 500, 502, 503, 504})
@@ -1385,9 +1392,7 @@ def build_prompt(data: ExtractedPageData) -> str:
 
     if data.json_ld_recipes:
         compact_recipes = _compact_jsonld_recipes(data.json_ld_recipes)
-        jsonld_str = json.dumps(compact_recipes, ensure_ascii=False, indent=2)
-        if len(jsonld_str) > MAX_JSONLD_CHARS:
-            jsonld_str = jsonld_str[:MAX_JSONLD_CHARS] + "\n... [skrócono]"
+        jsonld_str = json.dumps(compact_recipes, ensure_ascii=False)
         sections.append(f"=== DANE STRUKTURALNE JSON-LD (Schema.org Recipe) ===\n{jsonld_str}")
 
     if data.image_candidates:
@@ -1465,9 +1470,122 @@ def _strip_code_fences(raw_text: str) -> str:
     return cleaned.strip()
 
 
-def call_gemini_with_fallback(api_key: str, prompt: str) -> dict[str, Any]:
-    """Call Gemini API using model cascade (3.8-flash -> 3.5-flash-lite -> flash-latest) with retry backoff."""
-    client = genai.Client(api_key=api_key)
+def _build_groq_system_instruction() -> str:
+    """Build system instruction for Groq JSON mode including the full Pydantic Recipe JSON schema."""
+    schema_json = json.dumps(Recipe.model_json_schema(), ensure_ascii=False)
+    current_utc = (
+        datetime.now(timezone.utc)
+        .isoformat(timespec="milliseconds")
+        .replace("+00:00", "Z")
+    )
+    return (
+        f"{SYSTEM_INSTRUCTION}\n"
+        "WYMAGANY FORMAT WYJŚCIOWY (JSON):\n"
+        "Zwróć WYŁĄCZNIE jeden poprawny obiekt JSON zgodny dokładnie z poniższym schematem JSON Schema "
+        "(bez bloków markdown, bez komentarzy i bez zwracania samej definicji schematu).\n"
+        "Pola `sourceUrl` i `sourceDomain` przepisz dokładnie z danych wejściowych, "
+        f"`id` ustaw tak samo jak `slug`, a w `createdAt` wpisz datę w formacie ISO 8601 (np. \"{current_utc}\").\n"
+        f"Schemat JSON (Pydantic Recipe):\n{schema_json}"
+    )
+
+
+def call_groq_with_fallback(groq_api_key: str, prompt: str) -> dict[str, Any]:
+    """Call Groq Cloud using model cascade (llama-3.3-70b-versatile -> llama-3.1-8b-instant)."""
+    client = Groq(api_key=groq_api_key, max_retries=0)
+    system_instruction = _build_groq_system_instruction()
+    last_error: Optional[Exception] = None
+
+    for model_name in GROQ_MODEL_CASCADE:
+        try:
+            print(f"[AI Agent] Używam Groq: {model_name}", flush=True)
+            response = client.chat.completions.create(
+                model=model_name,
+                messages=[
+                    {"role": "system", "content": system_instruction},
+                    {"role": "user", "content": prompt},
+                ],
+                response_format={"type": "json_object"},
+                temperature=0.2,
+                timeout=REQUEST_TIMEOUT_GROQ,
+            )
+
+            raw_content = response.choices[0].message.content if response.choices else None
+            if not raw_content or not raw_content.strip():
+                raise ValueError(f"Model Groq {model_name} zwrócił pustą odpowiedź.")
+
+            validated_recipe = Recipe.model_validate_json(_strip_code_fences(raw_content))
+            print(
+                f"[AI Agent] Przepis wygenerowany przez Groq: {model_name}",
+                flush=True,
+            )
+            return validated_recipe.model_dump()
+
+        except (groq.RateLimitError, groq.APITimeoutError, TimeoutError) as exc:
+            last_error = exc
+            print(
+                f"[AI Agent] Groq ({model_name}) limit lub przekroczenie czasu oczekiwania: {exc}. "
+                "Przełączam na kolejny model...",
+                flush=True,
+            )
+            continue
+        except groq.APIStatusError as exc:
+            last_error = exc
+            status_code = getattr(exc, "status_code", None)
+            if status_code in {401, 403}:
+                print(
+                    f"[AI Agent] Błąd autoryzacji Groq (HTTP {status_code}): {exc}",
+                    flush=True,
+                )
+                break
+            if status_code in {413, 429}:
+                print(
+                    f"[AI Agent] Groq ({model_name}) przekroczył limit (HTTP {status_code}): {exc}. "
+                    "Przełączam na kolejny model...",
+                    flush=True,
+                )
+                continue
+            print(
+                f"[AI Agent] Błąd Groq API dla {model_name} (HTTP {status_code}): {exc}. "
+                "Przełączam na kolejny model...",
+                flush=True,
+            )
+            continue
+        except (groq.APIConnectionError, groq.APIError) as exc:
+            last_error = exc
+            print(
+                f"[AI Agent] Błąd połączenia/API Groq dla {model_name}: {exc}. "
+                "Przełączam na kolejny model...",
+                flush=True,
+            )
+            continue
+        except (ValidationError, json.JSONDecodeError, ValueError) as exc:
+            last_error = exc
+            print(
+                f"[AI Agent] Błąd walidacji JSON/schematu z Groq ({model_name}): {exc}. "
+                "Przełączam na kolejny model...",
+                flush=True,
+            )
+            continue
+
+    raise RuntimeError(
+        f"Wszystkie modele Groq ({', '.join(GROQ_MODEL_CASCADE)}) zawiodły. "
+        f"Ostatni błąd: {last_error}"
+    )
+
+
+def _create_gemini_client(gemini_api_key: str) -> tuple[genai.Client, str]:
+    """Initialize Gemini Developer API or Vertex AI Express client based on API key prefix."""
+    if gemini_api_key.startswith("AQ."):
+        return (
+            genai.Client(vertexai=True, api_key=gemini_api_key),
+            "Vertex AI Express (Gemini)",
+        )
+    return genai.Client(api_key=gemini_api_key), "Google Gemini"
+
+
+def call_gemini_with_fallback(gemini_api_key: str, prompt: str) -> dict[str, Any]:
+    """Call Gemini / Vertex AI API using model cascade (2.5-flash -> 2.5-flash-lite -> 2.0-flash) with retry backoff."""
+    client, provider_label = _create_gemini_client(gemini_api_key)
     config = types.GenerateContentConfig(
         system_instruction=SYSTEM_INSTRUCTION,
         response_mime_type="application/json",
@@ -1476,12 +1594,14 @@ def call_gemini_with_fallback(api_key: str, prompt: str) -> dict[str, Any]:
 
     last_error: Optional[Exception] = None
 
-    for model_name in MODEL_CASCADE:
+    for model_name in GEMINI_MODEL_CASCADE:
         total_attempts = 1 + len(RETRY_DELAYS_SECONDS)
         for attempt in range(total_attempts):
             try:
-                log_info(
-                    f"Wywołanie Gemini API: model={model_name} (próba {attempt + 1}/{total_attempts})"
+                print(
+                    f"[AI Agent] Używam {provider_label}: {model_name} "
+                    f"(próba {attempt + 1}/{total_attempts})",
+                    flush=True,
                 )
                 response = client.models.generate_content(
                     model=model_name,
@@ -1490,11 +1610,20 @@ def call_gemini_with_fallback(api_key: str, prompt: str) -> dict[str, Any]:
                 )
 
                 if isinstance(response.parsed, Recipe):
+                    print(
+                        f"[AI Agent] Przepis wygenerowany przez {provider_label}: {model_name}",
+                        flush=True,
+                    )
                     return response.parsed.model_dump()
 
                 raw_text = response.text
                 if raw_text:
-                    return json.loads(_strip_code_fences(raw_text))
+                    parsed_dict = json.loads(_strip_code_fences(raw_text))
+                    print(
+                        f"[AI Agent] Przepis wygenerowany przez {provider_label}: {model_name}",
+                        flush=True,
+                    )
+                    return parsed_dict
 
                 raise ValueError(f"Model {model_name} zwrócił pustą odpowiedź.")
 
@@ -1532,9 +1661,45 @@ def call_gemini_with_fallback(api_key: str, prompt: str) -> dict[str, Any]:
                 break
 
     raise RuntimeError(
-        f"Wszystkie modele w kaskadzie ({', '.join(MODEL_CASCADE)}) zawiodły. "
+        f"Wszystkie modele w kaskadzie {provider_label} ({', '.join(GEMINI_MODEL_CASCADE)}) zawiodły. "
         f"Ostatni błąd: {last_error}"
     )
+
+
+def call_ai_with_fallback(
+    prompt: str,
+    *,
+    groq_api_key: str = "",
+    gemini_api_key: str = "",
+) -> dict[str, Any]:
+    """Run Multi-Provider AI cascade: Groq Cloud primary -> Google Gemini / Vertex AI fallback."""
+    groq_key = groq_api_key.strip()
+    gemini_key = gemini_api_key.strip()
+
+    if not groq_key and not gemini_key:
+        raise RuntimeError(
+            "Brak skonfigurowanych kluczy API (GROQ_API_KEY ani GEMINI_API_KEY)."
+        )
+
+    if groq_key:
+        try:
+            return call_groq_with_fallback(groq_key, prompt)
+        except Exception as exc:
+            if not gemini_key:
+                raise RuntimeError(
+                    f"Groq Cloud zawiódł, a zmienna GEMINI_API_KEY nie jest ustawiona dla fallbacku: {exc}"
+                ) from exc
+            print(
+                f"[AI Agent] Fallback do Gemini po niepowodzeniu Groq ({exc})...",
+                flush=True,
+            )
+    else:
+        print(
+            "[AI Agent] Brak GROQ_API_KEY — przechodzę bezpośrednio do Gemini...",
+            flush=True,
+        )
+
+    return call_gemini_with_fallback(gemini_key, prompt)
 
 
 def generate_unique_slug(title: str, recipes_dir: Path) -> str:
@@ -1882,10 +2047,11 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
         print(f"[ERROR] {exc}", file=sys.stderr)
         return 1
 
-    api_key = os.environ.get("GEMINI_API_KEY", "").strip()
-    if not api_key:
+    groq_api_key = os.environ.get("GROQ_API_KEY", "").strip()
+    gemini_api_key = os.environ.get("GEMINI_API_KEY", "").strip()
+    if not groq_api_key and not gemini_api_key:
         print(
-            "[ERROR] Brak zmiennej środowiskowej GEMINI_API_KEY.",
+            "[ERROR] Brak zmiennych środowiskowych GROQ_API_KEY oraz GEMINI_API_KEY.",
             file=sys.stderr,
         )
         return 1
@@ -1893,7 +2059,11 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     try:
         extracted = collect_page_data(url)
         prompt = build_prompt(extracted)
-        raw_recipe = call_gemini_with_fallback(api_key, prompt)
+        raw_recipe = call_ai_with_fallback(
+            prompt,
+            groq_api_key=groq_api_key,
+            gemini_api_key=gemini_api_key,
+        )
         recipe = finalize_recipe(raw_recipe, extracted, RECIPES_DIR)
         saved_path = save_recipe_and_emit_outputs(recipe, RECIPES_DIR)
         log_info(f"Zapisano przepis: {saved_path}")
