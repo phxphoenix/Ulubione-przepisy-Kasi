@@ -26,6 +26,7 @@ export interface RecipeDetailViewProps {
   backHref?: string;
   backLabel?: string;
   onBack?: () => void;
+  isInstantPreview?: boolean;
 }
 
 export default function RecipeDetailView({
@@ -33,6 +34,7 @@ export default function RecipeDetailView({
   backHref,
   backLabel = 'Wszystkie przepisy',
   onBack,
+  isInstantPreview = false,
 }: RecipeDetailViewProps) {
   const categoryMeta = getCategoryMeta(recipe.category);
   const CategoryIcon = categoryMeta.icon;
@@ -68,6 +70,13 @@ export default function RecipeDetailView({
       {/* Article Header: category, title, summary, metadata & source link */}
       <header className="space-y-4">
         <div className="flex flex-wrap items-center gap-2.5">
+          {isInstantPreview ? (
+            <span className="inline-flex items-center gap-1.5 rounded-lg border border-[#C9DBC9] bg-[#EDF3EE] px-3 py-1 text-xs font-bold text-[#3B5542]">
+              <Sparkles className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+              <span>Nowość – właśnie dodano!</span>
+            </span>
+          ) : null}
+
           <span
             className={`inline-flex items-center gap-1.5 rounded-lg px-3 py-1 text-xs font-semibold ${categoryMeta.badgeClass}`}
           >

@@ -10,6 +10,7 @@ import {
   RotateCcw,
   Search,
   SearchX,
+  Sparkles,
   X,
 } from 'lucide-react';
 import {
@@ -20,10 +21,18 @@ import {
 } from '../constants/categories';
 import type {
   IngredientGroup,
+  Recipe,
   RecipeDifficulty,
   RecipeImage,
   RecipeVideo,
 } from '../types/recipe';
+import {
+  getStoredInstantRecipes,
+  INSTANT_RECIPES_STORAGE_KEY,
+  pruneBuiltInstantRecipes,
+  RECIPE_ADDED_EVENT,
+  requestOpenInstantRecipe,
+} from '../utils/instantRecipes';
 import { withBase } from '../utils/paths';
 import {
   DIFFICULTY_BADGE_CLASSES,
@@ -45,6 +54,9 @@ export interface CatalogRecipe {
   ingredientNames?: string[];
   sourceDomain: string;
   createdAt: string;
+  isInstantNew?: boolean;
+  isStaticBuilt?: boolean;
+  fullRecipe?: Recipe;
 }
 
 export interface RecipeCatalogProps {
@@ -115,6 +127,7 @@ interface RecipeCardImageProps {
   title: string;
   category: RecipeCategory;
   hasVideo: boolean;
+  isInstantNew?: boolean;
   priority?: boolean;
 }
 
@@ -123,6 +136,7 @@ function RecipeCardImage({
   title,
   category,
   hasVideo,
+  isInstantNew = false,
   priority = false,
 }: RecipeCardImageProps) {
   const resolvedSrc = image?.url ? withBase(image.url) : '';
@@ -178,6 +192,13 @@ function RecipeCardImage({
         </div>
       )}
 
+      {isInstantNew ? (
+        <span className="absolute top-3 left-3 inline-flex items-center gap-1.5 rounded-full border border-white/20 bg-[#4A6B53]/95 px-2.5 py-1 text-xs font-bold text-white shadow-sm backdrop-blur-xs">
+          <Sparkles className="h-3 w-3 shrink-0" aria-hidden="true" />
+          <span>Nowość – właśnie dodano!</span>
+        </span>
+      ) : null}
+
       {hasVideo ? (
         <span className="absolute top-3 right-3 inline-flex items-center gap-1.5 rounded-full border border-white/15 bg-[#1F2421]/80 px-2.5 py-1 text-xs font-semibold text-white shadow-sm backdrop-blur-xs">
           <Play className="h-3 w-3 fill-current" aria-hidden="true" />
@@ -204,6 +225,12 @@ function RecipeCard({ recipe, priority = false }: RecipeCardProps) {
   return (
     <a
       href={recipeHref}
+      onClick={(event) => {
+        if (!recipe.isStaticBuilt && recipe.fullRecipe) {
+          event.preventDefault();
+          requestOpenInstantRecipe(recipe.fullRecipe);
+        }
+      }}
       className="catalog-item-enter group flex flex-col overflow-hidden rounded-2xl border border-[#EAE5DF] bg-white shadow-xs transition-all duration-200 hover:-translate-y-0.5 hover:border-[#4A6B53]/35 hover:shadow-md active:scale-[0.99] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4A6B53] focus-visible:ring-offset-2 focus-visible:ring-offset-[#FAF8F5] touch-manipulation"
     >
       <RecipeCardImage
@@ -211,6 +238,7 @@ function RecipeCard({ recipe, priority = false }: RecipeCardProps) {
         title={recipe.title}
         category={recipe.category}
         hasVideo={hasVideo}
+        isInstantNew={recipe.isInstantNew}
         priority={priority}
       />
 
@@ -318,16 +346,96 @@ function EmptyState({
   );
 }
 
+function toCatalogRecipeFromFull(recipe: Recipe): CatalogRecipe {
+  const mainImage =
+    recipe.images.find((img) => img.isMain) ?? recipe.images[0];
+  const ingredientNames = Array.from(
+    new Set(
+      recipe.ingredientGroups.flatMap((group) =>
+        group.items.map((item) => item.name)
+      )
+    )
+  );
+
+  return {
+    slug: recipe.slug,
+    title: recipe.title,
+    summary: recipe.summary,
+    category: recipe.category,
+    tags: recipe.tags ?? [],
+    totalTimeMinutes: recipe.totalTimeMinutes,
+    difficulty: recipe.difficulty,
+    images: mainImage ? [mainImage] : [],
+    videos: recipe.videos && recipe.videos.length > 0 ? [recipe.videos[0]] : [],
+    ingredientNames,
+    sourceDomain: recipe.sourceDomain,
+    createdAt: recipe.createdAt,
+    isInstantNew: true,
+    isStaticBuilt: false,
+    fullRecipe: recipe,
+  };
+}
+
 export default function RecipeCatalog({ recipes }: RecipeCatalogProps) {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] =
     useState<CategoryFilter>(ALL_CATEGORY);
   const [sortBy, setSortBy] = useState<SortOption>('newest');
+  const [instantRecipes, setInstantRecipes] = useState<Recipe[]>([]);
 
   const deferredSearchQuery = useDeferredValue(searchQuery);
 
+  const staticSlugs = useMemo(
+    () => new Set(recipes.map((recipe) => recipe.slug)),
+    [recipes]
+  );
+
+  useEffect(() => {
+    pruneBuiltInstantRecipes(staticSlugs);
+
+    function syncInstantRecipes() {
+      const stored = getStoredInstantRecipes();
+      setInstantRecipes(stored.map((entry) => entry.recipe));
+    }
+
+    syncInstantRecipes();
+
+    function handleRecipeAdded() {
+      syncInstantRecipes();
+    }
+
+    function handleStorage(event: StorageEvent) {
+      if (event.key === INSTANT_RECIPES_STORAGE_KEY) {
+        syncInstantRecipes();
+      }
+    }
+
+    window.addEventListener(RECIPE_ADDED_EVENT, handleRecipeAdded);
+    window.addEventListener('storage', handleStorage);
+    return () => {
+      window.removeEventListener(RECIPE_ADDED_EVENT, handleRecipeAdded);
+      window.removeEventListener('storage', handleStorage);
+    };
+  }, [staticSlugs]);
+
+  const mergedRecipes = useMemo<CatalogRecipe[]>(() => {
+    const instantSlugSet = new Set(instantRecipes.map((recipe) => recipe.slug));
+
+    const dynamicTopItems: CatalogRecipe[] = instantRecipes
+      .filter((recipe) => !staticSlugs.has(recipe.slug))
+      .map((recipe) => toCatalogRecipeFromFull(recipe));
+
+    const staticItems: CatalogRecipe[] = recipes.map((recipe) => ({
+      ...recipe,
+      isStaticBuilt: true,
+      isInstantNew: instantSlugSet.has(recipe.slug),
+    }));
+
+    return [...dynamicTopItems, ...staticItems];
+  }, [instantRecipes, recipes, staticSlugs]);
+
   const indexedRecipes = useMemo<IndexedRecipe[]>(() => {
-    return recipes.map((recipe) => {
+    return mergedRecipes.map((recipe) => {
       const ingredients = extractIngredientNames(recipe);
       const searchText = normalizeSearchText(
         [recipe.title, ...recipe.tags, ...ingredients].join(' ')
@@ -340,7 +448,7 @@ export default function RecipeCatalog({ recipes }: RecipeCatalogProps) {
         createdAtMs: Number.isNaN(parsedDate) ? 0 : parsedDate,
       };
     });
-  }, [recipes]);
+  }, [mergedRecipes]);
 
   const { searchMatchedRecipes, categoryCounts } = useMemo(() => {
     const normalizedQuery = normalizeSearchText(deferredSearchQuery);
@@ -388,8 +496,11 @@ export default function RecipeCatalog({ recipes }: RecipeCatalogProps) {
           sensitivity: 'base',
         });
       }
-      // 'newest' (default)
+      // 'newest' (default): pin newly added instant-preview recipes at the very top
+      const aNew = a.recipe.isInstantNew ? 1 : 0;
+      const bNew = b.recipe.isInstantNew ? 1 : 0;
       return (
+        bNew - aNew ||
         b.createdAtMs - a.createdAtMs ||
         a.recipe.title.localeCompare(b.recipe.title, 'pl', {
           sensitivity: 'base',
@@ -587,7 +698,7 @@ export default function RecipeCatalog({ recipes }: RecipeCatalogProps) {
         </div>
       ) : (
         <EmptyState
-          totalRecipes={recipes.length}
+          totalRecipes={mergedRecipes.length}
           searchQuery={searchQuery}
           selectedCategory={selectedCategory}
           onResetFilters={handleResetFilters}

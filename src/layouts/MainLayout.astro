@@ -1,7 +1,9 @@
 ---
+import { getCollection } from 'astro:content';
 import '../styles/global.css';
 import { withBase } from '../utils/paths';
 import { Plus, BookOpen } from 'lucide-react';
+import RecipeWorkflowController from '../components/RecipeWorkflowController';
 
 interface Props {
   title?: string;
@@ -14,7 +16,8 @@ const {
 } = Astro.props;
 
 const homeUrl = withBase('/');
-const addRecipeUrl = withBase('/dodaj');
+const recipeEntries = await getCollection('recipes');
+const staticRecipeSlugs = recipeEntries.map((entry) => entry.data.slug || entry.id);
 ---
 
 <!doctype html>
@@ -42,43 +45,58 @@ const addRecipeUrl = withBase('/dodaj');
     <!-- Safe-area spacing wrapper for iOS notch/status bar -->
     <div class="pt-[env(safe-area-inset-top,0px)] bg-[#FAF8F5]/90 backdrop-blur-md sticky top-0 z-40 border-b border-[#EAE5DF] transition-colors">
       <header class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-3.5 sm:py-4">
-        <div class="flex items-center justify-between gap-4">
+        <div class="flex items-center justify-between gap-3 sm:gap-4">
           <!-- Logo & Titles -->
-          <a href={homeUrl} class="group flex items-center gap-3 transition-opacity hover:opacity-90">
-            <div class="w-10 h-10 sm:w-11 sm:h-11 rounded-xl bg-[#4A6B53]/10 border border-[#4A6B53]/20 flex items-center justify-center text-[#4A6B53] shadow-xs group-hover:bg-[#4A6B53]/15 transition-colors">
+          <a href={homeUrl} class="group flex min-w-0 items-center gap-2.5 sm:gap-3 transition-opacity hover:opacity-90">
+            <div class="w-10 h-10 sm:w-11 sm:h-11 shrink-0 rounded-xl bg-[#4A6B53]/10 border border-[#4A6B53]/20 flex items-center justify-center text-[#4A6B53] shadow-xs group-hover:bg-[#4A6B53]/15 transition-colors">
               <BookOpen className="w-5 h-5 sm:w-6 sm:h-6 text-[#4A6B53]" />
             </div>
-            <div>
-              <h1 class="font-serif text-lg sm:text-2xl font-bold tracking-tight text-[#1F2421] leading-tight group-hover:text-[#4A6B53] transition-colors">
+            <div class="min-w-0">
+              <h1 class="font-serif text-base sm:text-2xl font-bold tracking-tight text-[#1F2421] leading-tight group-hover:text-[#4A6B53] transition-colors">
                 Ulubione przepisy Kasi
               </h1>
-              <p class="text-xs sm:text-sm text-[#1F2421]/60 font-medium tracking-wide">
+              <p class="truncate text-xs sm:text-sm text-[#1F2421]/60 font-medium tracking-wide">
                 Domowa kolekcja kulinarnych inspiracji
               </p>
             </div>
           </a>
 
           <!-- Action button -->
-          <div class="flex items-center gap-2">
-            <a
-              href={addRecipeUrl}
-              class="inline-flex items-center gap-1.5 px-3.5 py-2 sm:px-4 sm:py-2.5 rounded-lg bg-[#4A6B53] hover:bg-[#3B5542] text-white font-medium text-xs sm:text-sm shadow-sm transition-all duration-150 active:scale-[0.98] focus:outline-none focus:ring-2 focus:ring-[#4A6B53]/50 focus:ring-offset-2 focus:ring-offset-[#FAF8F5]"
+          <div class="flex shrink-0 items-center gap-2">
+            <button
+              id="header-add-recipe-btn"
+              type="button"
+              class="inline-flex min-h-[44px] shrink-0 cursor-pointer items-center gap-1.5 whitespace-nowrap rounded-lg bg-[#4A6B53] px-3 py-2 text-xs font-medium text-white shadow-sm transition-all duration-150 hover:bg-[#3B5542] active:scale-[0.98] focus:outline-none focus:ring-2 focus:ring-[#4A6B53]/50 focus:ring-offset-2 focus:ring-offset-[#FAF8F5] sm:px-4 sm:py-2.5 sm:text-sm touch-manipulation"
             >
-              <Plus className="w-4 h-4 stroke-[2.5]" />
+              <Plus className="w-4 h-4 stroke-[2.5]" aria-hidden="true" />
               <span class="font-semibold">Dodaj przepis</span>
-            </a>
+            </button>
           </div>
         </div>
       </header>
     </div>
 
+    <script is:inline>
+      (function () {
+        var btn = document.getElementById('header-add-recipe-btn');
+        if (!btn) return;
+        btn.addEventListener('click', function () {
+          window.__kasiaPendingOpenModal = true;
+          window.dispatchEvent(new CustomEvent('kasia:open-add-recipe', { detail: { initialView: 'form' } }));
+        });
+      })();
+    </script>
+
     <!-- Main Content -->
     <main class="flex-1 max-w-6xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
-      <slot />
+      <RecipeWorkflowController client:load staticSlugs={staticRecipeSlugs} />
+      <div id="page-slot-content">
+        <slot />
+      </div>
     </main>
 
-    <!-- Footer with iOS safe area inset -->
-    <footer class="mt-auto border-t border-[#EAE5DF] bg-[#FFFFFF]/70 backdrop-blur-xs pb-[calc(1.5rem+env(safe-area-inset-bottom,0px))] pt-6">
+    <!-- Footer with iOS safe area inset & mobile FAB clearance -->
+    <footer class="mt-auto border-t border-[#EAE5DF] bg-[#FFFFFF]/70 backdrop-blur-xs pb-[calc(5.25rem+env(safe-area-inset-bottom,0px))] sm:pb-[calc(1.5rem+env(safe-area-inset-bottom,0px))] pt-6">
       <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs sm:text-sm text-[#1F2421]/60">
         <p class="flex items-center gap-1.5">
           <span>Stworzone z miłością do dobrej kuchni</span>
