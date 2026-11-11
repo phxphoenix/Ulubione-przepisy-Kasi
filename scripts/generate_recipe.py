@@ -27,9 +27,9 @@ REPO_ROOT = Path(__file__).resolve().parent.parent
 RECIPES_DIR = REPO_ROOT / "src" / "content" / "recipes"
 
 MODEL_CASCADE: tuple[str, ...] = (
-    "gemini-2.5-flash",
-    "gemini-2.5-flash-lite",
-    "gemini-2.0-flash",
+    "gemini-3.8-flash",
+    "gemini-3.5-flash-lite",
+    "gemini-flash-latest",
 )
 RETRY_DELAYS_SECONDS: tuple[float, ...] = (2.0, 5.0)
 JINA_RETRY_DELAYS_SECONDS: tuple[float, ...] = (2.0, 4.0)
@@ -1466,13 +1466,12 @@ def _strip_code_fences(raw_text: str) -> str:
 
 
 def call_gemini_with_fallback(api_key: str, prompt: str) -> dict[str, Any]:
-    """Call Gemini API using model cascade (2.5-flash -> 2.5-flash-lite -> 2.0-flash) with retry backoff."""
+    """Call Gemini API using model cascade (3.8-flash -> 3.5-flash-lite -> flash-latest) with retry backoff."""
     client = genai.Client(api_key=api_key)
     config = types.GenerateContentConfig(
         system_instruction=SYSTEM_INSTRUCTION,
         response_mime_type="application/json",
         response_schema=Recipe,
-        temperature=0.2,
     )
 
     last_error: Optional[Exception] = None
