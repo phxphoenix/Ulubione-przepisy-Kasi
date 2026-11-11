@@ -32,13 +32,16 @@ MODEL_CASCADE: tuple[str, ...] = (
     "gemini-2.0-flash",
 )
 RETRY_DELAYS_SECONDS: tuple[float, ...] = (2.0, 5.0)
+JINA_RETRY_DELAYS_SECONDS: tuple[float, ...] = (2.0, 4.0)
 MAX_SERVER_RETRY_DELAY = 20.0
 REQUEST_TIMEOUT_HTML = 20
 REQUEST_TIMEOUT_JINA = 25
-MAX_PROMPT_TEXT_CHARS = 28000
-MAX_JSONLD_CHARS = 16000
+MAX_PROMPT_TEXT_CHARS = 45000
+MAX_JSONLD_CHARS = 24000
 MAX_IMAGE_CANDIDATES = 25
 MIN_IMAGE_DIMENSION_PX = 200
+JINA_TRANSIENT_STATUS_CODES = frozenset({429, 500, 502, 503, 504})
+JINA_USER_AGENT = "ulubione-przepisy-kasi/1.0"
 
 ALLOWED_CATEGORIES: tuple[str, ...] = (
     "Śniadania",
@@ -76,9 +79,16 @@ BROWSER_HEADERS: dict[str, str] = {
     "Cache-Control": "no-cache",
 }
 
+# r.jina.ai rejects requests from Python clients that spoof a desktop browser User-Agent.
 JINA_HEADERS: dict[str, str] = {
-    "User-Agent": BROWSER_HEADERS["User-Agent"],
+    "User-Agent": JINA_USER_AGENT,
     "Accept": "text/plain, text/markdown;q=0.9, */*;q=0.8",
+}
+
+JINA_HTML_HEADERS: dict[str, str] = {
+    "User-Agent": JINA_USER_AGENT,
+    "Accept": "application/json",
+    "X-Return-Format": "html",
 }
 
 SYSTEM_INSTRUCTION = """Jesteś redaktorem książki kucharskiej "Ulubione przepisy Kasi".
@@ -122,7 +132,7 @@ IMAGE_NOISE_PATH_RE = re.compile(
     re.IGNORECASE,
 )
 IMAGE_NOISE_TOKEN_RE = re.compile(
-    r"(?:^|[/_\-\s.])(logo|icon|badge|ads|advert|pin-it|share)(?:$|[/_\-\s.])",
+    r"(?:^|[/_\-\s.])(logo|icon|badge|ads|advert|pin-it|share|placeholder)(?:$|[/_\-\s.])",
     re.IGNORECASE,
 )
 URL_DIM_SUFFIX_RE = re.compile(r"-(\d{1,4})x(\d{1,4})(?:\.[a-z0-9]+)?$", re.IGNORECASE)
@@ -795,23 +805,44 @@ def _extract_videos_from_jsonld_obj(
                     out.append(cand)
 
 
+def _is_noise_tag(tag: Tag) -> bool:
+    if tag.name in NOISE_ANCESTOR_TAGS:
+        return True
+    classes = " ".join(tag.get("class") or [])
+    elem_id = str(tag.get("id") or "")
+    combined = f"{classes} {elem_id}".strip()
+    return bool(combined and NOISE_ATTR_RE.search(combined))
+
+
 def _find_article_root(soup: BeautifulSoup) -> Tag:
     selectors = (
         "article",
         "main",
         "[role='main']",
-        ".wprm-recipe-container",
-        ".tasty-recipes",
         ".entry-content",
         ".post-content",
         ".recipe-content",
+        ".wprm-recipe-container",
+        ".tasty-recipes",
         "#content",
     )
+    fallback_candidate: Optional[Tag] = None
     for selector in selectors:
-        found = soup.select_one(selector)
-        if found is not None:
-            return found
-    return soup.body or soup
+        best_for_selector: Optional[Tag] = None
+        best_len = 0
+        for candidate in soup.select(selector):
+            if _is_noise_tag(candidate) or _has_noise_ancestor(candidate, soup):
+                continue
+            text_len = len(candidate.get_text(" ", strip=True))
+            if text_len > best_len:
+                best_for_selector = candidate
+                best_len = text_len
+        if best_for_selector is not None:
+            if best_len >= 250:
+                return best_for_selector
+            if fallback_candidate is None:
+                fallback_candidate = best_for_selector
+    return fallback_candidate or soup.body or soup
 
 
 def _has_noise_ancestor(tag: Tag, root: Tag) -> bool:
@@ -821,10 +852,7 @@ def _has_noise_ancestor(tag: Tag, root: Tag) -> bool:
             return True
         if current.name == "header" and root.name not in {"article", "main"}:
             return True
-        classes = " ".join(current.get("class") or [])
-        elem_id = str(current.get("id") or "")
-        combined = f"{classes} {elem_id}".strip()
-        if combined and NOISE_ATTR_RE.search(combined):
+        if _is_noise_tag(current):
             return True
         current = current.parent
     return False
@@ -872,11 +900,9 @@ def _extract_article_text(soup: BeautifulSoup) -> str:
     for tag in clone.find_all(["script", "style", "noscript", "svg", "nav", "footer", "aside"]):
         tag.decompose()
     for elem in clone.find_all(True):
-        if not getattr(elem, "attrs", None):
+        if elem.parent is clone or not getattr(elem, "attrs", None):
             continue
-        classes = " ".join(elem.get("class") or [])
-        elem_id = str(elem.get("id") or "")
-        if NOISE_ATTR_RE.search(f"{classes} {elem_id}"):
+        if _is_noise_tag(elem):
             elem.decompose()
     lines = [line.strip() for line in clone.get_text("\n").splitlines()]
     return "\n".join(line for line in lines if line)
@@ -936,26 +962,52 @@ def _collect_images_from_container(
     return found
 
 
-def extract_from_html(url: str) -> Optional[dict[str, Any]]:
-    """Step A: Scrape HTML via requests + BeautifulSoup for JSON-LD, images, videos, and fallback text."""
-    try:
-        response = requests.get(
-            url,
-            headers=BROWSER_HEADERS,
-            timeout=REQUEST_TIMEOUT_HTML,
-            allow_redirects=True,
-        )
-        response.raise_for_status()
-    except requests.RequestException as exc:
-        log_warn(f"Krok A (bezpośredni scraping HTML) nie powiódł się: {exc}")
-        return None
+CHALLENGE_TITLE_MARKERS: tuple[str, ...] = (
+    "just a moment...",
+    "attention required! | cloudflare",
+    "403 forbidden",
+    "access denied",
+)
+CHALLENGE_BODY_MARKERS: tuple[str, ...] = (
+    "warning: target url returned error",
+    "just a moment...",
+    "enable javascript and cookies to continue",
+    "performing security verification",
+    "verify you are human",
+    "attention required! | cloudflare",
+)
 
-    final_url = response.url or url
-    soup = BeautifulSoup(response.content, "html.parser")
+
+def _is_challenge_or_error_text(text: str, title: str = "") -> bool:
+    """Detect short anti-bot challenge or HTTP error pages instead of real recipe content."""
+    lowered_title = title.strip().lower()
+    if lowered_title in CHALLENGE_TITLE_MARKERS:
+        return True
+
+    stripped = text.strip()
+    if not stripped:
+        return True
+
+    lowered = stripped.lower()
+    if len(stripped) < 2500 and any(marker in lowered for marker in CHALLENGE_BODY_MARKERS):
+        return True
+    if len(stripped) < 800 and "access denied" in lowered:
+        return True
+    return False
+
+
+def parse_html_document(
+    raw_html: bytes | str, source_url: str, final_url: str
+) -> dict[str, Any]:
+    """Parse raw HTML into JSON-LD recipes, images, videos, language hint, and cleaned text."""
+    soup = BeautifulSoup(raw_html, "html.parser")
 
     base_tag = soup.find("base", href=True)
     base_url = normalize_url(str(base_tag["href"]), final_url) if base_tag else final_url
     base_url = base_url or final_url
+
+    title_tag = soup.find("title")
+    page_title = title_tag.get_text(" ", strip=True) if title_tag else ""
 
     html_tag = soup.find("html")
     lang_hint: Optional[str] = None
@@ -1085,7 +1137,9 @@ def extract_from_html(url: str) -> Optional[dict[str, Any]]:
                 videos.append(cand)
 
     return {
+        "source_url": source_url,
         "final_url": final_url,
+        "page_title": page_title,
         "language_hint": lang_hint,
         "json_ld_recipes": json_ld_recipes,
         "images": images,
@@ -1094,32 +1148,145 @@ def extract_from_html(url: str) -> Optional[dict[str, Any]]:
     }
 
 
-def fetch_jina_markdown(url: str) -> Optional[str]:
-    """Step B: Fetch clean markdown representation via r.jina.ai as support/fallback."""
-    jina_url = f"https://r.jina.ai/{url}"
+def extract_from_html(url: str) -> Optional[dict[str, Any]]:
+    """Step A: Scrape HTML via requests + BeautifulSoup for JSON-LD, images, videos, and fallback text."""
     try:
         response = requests.get(
-            jina_url,
-            headers=JINA_HEADERS,
-            timeout=REQUEST_TIMEOUT_JINA,
+            url,
+            headers=BROWSER_HEADERS,
+            timeout=REQUEST_TIMEOUT_HTML,
+            allow_redirects=True,
         )
         response.raise_for_status()
-        text = response.text.strip()
-        return text if text else None
     except requests.RequestException as exc:
-        log_warn(f"Krok B (r.jina.ai) nie powiódł się: {exc}")
+        log_warn(f"Krok A (bezpośredni scraping HTML) nie powiódł się: {exc}")
         return None
+
+    parsed = parse_html_document(response.content, url, response.url or url)
+    if not parsed["json_ld_recipes"] and _is_challenge_or_error_text(
+        parsed["article_text"], parsed["page_title"]
+    ):
+        log_warn("Krok A zwrócił stronę blokady lub błędu zamiast treści przepisu.")
+        return None
+    return parsed
+
+
+def _request_jina(
+    url: str, headers: dict[str, str], timeout: int, label: str
+) -> Optional[requests.Response]:
+    """Fetch a URL via r.jina.ai with short retries for transient rate-limit/5xx errors."""
+    jina_url = f"https://r.jina.ai/{url}"
+    total_attempts = 1 + len(JINA_RETRY_DELAYS_SECONDS)
+
+    for attempt in range(total_attempts):
+        try:
+            response = requests.get(
+                jina_url,
+                headers=headers,
+                timeout=timeout,
+            )
+            if (
+                response.status_code in JINA_TRANSIENT_STATUS_CODES
+                and attempt < len(JINA_RETRY_DELAYS_SECONDS)
+            ):
+                wait_s = JINA_RETRY_DELAYS_SECONDS[attempt]
+                log_warn(
+                    f"{label} zwrócił tymczasowy status HTTP {response.status_code}. "
+                    f"Ponowienie za {wait_s:.1f}s..."
+                )
+                time.sleep(wait_s)
+                continue
+            response.raise_for_status()
+            return response
+        except (requests.Timeout, requests.ConnectionError) as exc:
+            if attempt < len(JINA_RETRY_DELAYS_SECONDS):
+                wait_s = JINA_RETRY_DELAYS_SECONDS[attempt]
+                log_warn(f"{label} błąd połączenia: {exc}. Ponowienie za {wait_s:.1f}s...")
+                time.sleep(wait_s)
+                continue
+            log_warn(f"{label} nie powiódł się: {exc}")
+            return None
+        except requests.RequestException as exc:
+            log_warn(f"{label} nie powiódł się: {exc}")
+            return None
+
+    return None
+
+
+def _fetch_jina_html_with_status(
+    url: str,
+) -> tuple[Optional[dict[str, Any]], Optional[int]]:
+    """Fetch rendered HTML via r.jina.ai JSON mode and return (parsed_data, target_http_status)."""
+    response = _request_jina(
+        url, JINA_HTML_HEADERS, REQUEST_TIMEOUT_JINA, "Krok B-HTML (r.jina.ai)"
+    )
+    if response is None:
+        return None, None
+
+    try:
+        payload = response.json()
+    except ValueError as exc:
+        log_warn(f"Krok B-HTML (r.jina.ai) zwrócił niepoprawny JSON: {exc}")
+        return None, None
+
+    data = payload.get("data") if isinstance(payload, dict) else None
+    if not isinstance(data, dict):
+        log_warn("Krok B-HTML (r.jina.ai) zwrócił pusty obiekt danych.")
+        return None, None
+
+    http_status = data.get("httpStatus")
+    target_status = http_status if isinstance(http_status, int) else None
+    if target_status is not None and target_status >= 400:
+        log_warn(
+            f"Krok B-HTML (r.jina.ai) otrzymał status HTTP {target_status} ze strony źródłowej."
+        )
+        return None, target_status
+
+    raw_html = data.get("html")
+    if not isinstance(raw_html, str) or not raw_html.strip():
+        return None, target_status
+
+    final_url = str(data.get("finalUrl") or url).strip() or url
+    parsed = parse_html_document(raw_html, url, final_url)
+    if not parsed["json_ld_recipes"] and _is_challenge_or_error_text(
+        parsed["article_text"], parsed["page_title"]
+    ):
+        log_warn("Krok B-HTML (r.jina.ai) otrzymał stronę blokady zamiast przepisu.")
+        return None, target_status
+    return parsed, target_status
+
+
+def fetch_jina_html(url: str) -> Optional[dict[str, Any]]:
+    """Fetch rendered HTML via r.jina.ai JSON mode to recover JSON-LD, og:image, and video embeds."""
+    parsed, _ = _fetch_jina_html_with_status(url)
+    return parsed
+
+
+def fetch_jina_markdown(url: str) -> Optional[str]:
+    """Step B: Fetch clean markdown representation via r.jina.ai as support/fallback."""
+    response = _request_jina(
+        url, JINA_HEADERS, REQUEST_TIMEOUT_JINA, "Krok B (r.jina.ai)"
+    )
+    if response is None:
+        return None
+    text = response.text.strip()
+    return text if text else None
 
 
 def _extract_media_from_markdown(
-    markdown_text: str, base_url: str
+    markdown_text: str, base_url: str, source_url: Optional[str] = None
 ) -> tuple[list[ImageCandidate], list[VideoCandidate]]:
     images: list[ImageCandidate] = []
     videos: list[VideoCandidate] = []
+    page_urls = {base_url.rstrip("/")}
+    if source_url:
+        page_urls.add(source_url.rstrip("/"))
 
     for alt, raw_url in MARKDOWN_IMAGE_RE.findall(markdown_text):
         abs_url = normalize_url(raw_url, base_url)
-        if abs_url and is_valid_image_candidate(abs_url, alt=alt):
+        if not abs_url or abs_url.rstrip("/") in page_urls:
+            continue
+        if is_valid_image_candidate(abs_url, alt=alt):
             images.append(
                 ImageCandidate(
                     url=abs_url,
@@ -1143,10 +1310,30 @@ def collect_page_data(url: str) -> ExtractedPageData:
     log_info(f"Pobieranie danych (Krok A - HTML): {url}")
     html_data = extract_from_html(url)
 
+    needs_jina_html = html_data is None or (
+        not html_data["json_ld_recipes"] and len(html_data["article_text"]) < 250
+    )
+    if needs_jina_html:
+        log_info(f"Pobieranie wyrenderowanego HTML (Krok B-HTML - r.jina.ai): {url}")
+        jina_html_data, jina_http_status = _fetch_jina_html_with_status(url)
+        if html_data is None and jina_http_status in {404, 410}:
+            raise RuntimeError(
+                f"Strona źródłowa nie istnieje lub została usunięta (HTTP {jina_http_status})."
+            )
+        if jina_html_data is not None and (
+            html_data is None
+            or jina_html_data["json_ld_recipes"]
+            or len(jina_html_data["article_text"]) > len(html_data["article_text"])
+        ):
+            html_data = jina_html_data
+
     log_info(f"Pobieranie czystego tekstu (Krok B - r.jina.ai): {url}")
     jina_text = fetch_jina_markdown(url)
+    usable_jina = (
+        jina_text if jina_text and not _is_challenge_or_error_text(jina_text) else None
+    )
 
-    if html_data is None and not jina_text:
+    if html_data is None and not usable_jina:
         raise RuntimeError(
             "Nie udało się pobrać treści ani przez bezpośredni scraping HTML, "
             "ani przez r.jina.ai."
@@ -1156,10 +1343,13 @@ def collect_page_data(url: str) -> ExtractedPageData:
     images: list[ImageCandidate] = list(html_data["images"]) if html_data else []
     videos: list[VideoCandidate] = list(html_data["videos"]) if html_data else []
 
-    if jina_text:
-        jina_images, jina_videos = _extract_media_from_markdown(jina_text, final_url)
+    if usable_jina:
+        jina_images, jina_videos = _extract_media_from_markdown(
+            usable_jina, final_url, source_url=url
+        )
         images.extend(jina_images)
-        videos.extend(jina_videos)
+        if not videos:
+            videos.extend(jina_videos)
 
     deduped_images = _dedupe_images(images)
     deduped_videos = _dedupe_videos(videos)
@@ -1172,8 +1362,17 @@ def collect_page_data(url: str) -> ExtractedPageData:
         image_candidates=deduped_images,
         video_candidates=deduped_videos,
         html_article_text=html_data["article_text"] if html_data else "",
-        jina_markdown=jina_text or "",
+        jina_markdown=usable_jina or "",
     )
+
+
+def _compact_jsonld_recipes(recipes: Sequence[dict[str, Any]]) -> list[dict[str, Any]]:
+    """Strip bulky non-recipe metadata (e.g., user reviews) so instructions are not truncated."""
+    ignored_keys = {"review", "aggregateRating", "potentialAction"}
+    return [
+        {key: val for key, val in recipe.items() if key not in ignored_keys}
+        for recipe in recipes
+    ]
 
 
 def build_prompt(data: ExtractedPageData) -> str:
@@ -1185,7 +1384,8 @@ def build_prompt(data: ExtractedPageData) -> str:
         sections.append(f"Wykryty atrybut języka strony: {data.language_hint}")
 
     if data.json_ld_recipes:
-        jsonld_str = json.dumps(data.json_ld_recipes, ensure_ascii=False, indent=2)
+        compact_recipes = _compact_jsonld_recipes(data.json_ld_recipes)
+        jsonld_str = json.dumps(compact_recipes, ensure_ascii=False, indent=2)
         if len(jsonld_str) > MAX_JSONLD_CHARS:
             jsonld_str = jsonld_str[:MAX_JSONLD_CHARS] + "\n... [skrócono]"
         sections.append(f"=== DANE STRUKTURALNE JSON-LD (Schema.org Recipe) ===\n{jsonld_str}")
@@ -1213,11 +1413,11 @@ def build_prompt(data: ExtractedPageData) -> str:
     jina_text = data.jina_markdown
     html_text = data.html_article_text
     if jina_text and html_text:
-        is_jina_error = "Warning: Target URL returned error" in jina_text and len(jina_text) < 600
-        if is_jina_error:
-            combined_text = html_text
-        elif len(jina_text) < 2000:
+        if len(jina_text) < 2000:
             combined_text = f"{jina_text}\n\n--- TEKST Z HTML ---\n{html_text}"
+        elif len(jina_text) > MAX_PROMPT_TEXT_CHARS and len(html_text) >= 500:
+            # Prefer noise-stripped HTML article text when raw Jina markdown exceeds budget
+            combined_text = html_text
         else:
             combined_text = jina_text
     else:
