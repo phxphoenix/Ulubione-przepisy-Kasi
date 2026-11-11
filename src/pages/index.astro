@@ -1,124 +1,58 @@
 ---
+import { getCollection } from 'astro:content';
+import { Sparkles } from 'lucide-react';
 import MainLayout from '../layouts/MainLayout.astro';
-import { withBase } from '../utils/paths';
-import { Clock, Users, Sparkles, ChefHat, Heart, ArrowRight } from 'lucide-react';
+import RecipeCatalog, { type CatalogRecipe } from '../components/RecipeCatalog';
 
-const sampleRecipes = [
-  {
-    id: "risotto-kurki",
-    title: "Aromatyczne risotto z kurkami i szałwią",
-    category: "Obiad",
-    time: "35 min",
-    servings: "4 porcje",
-    tag: "Ulubione Kasi",
-    description: "Kremowe, maślane risotto ze świeżymi kurkami, nutą białego wina i chrupiącą szałwią prosto z ogródka.",
-    isFavorite: true
-  },
-  {
-    id: "cynamonki",
-    title: "Cynamonowe bułeczki drożdżowe",
-    category: "Wypieki & Desery",
-    time: "50 min",
-    servings: "8 sztuk",
-    tag: "Słodkości",
-    description: "Puszyste, maślane zawijańce z dużą ilością cejlońskiego cynamonu i kremowym lukrem waniliowym.",
-    isFavorite: false
-  },
-  {
-    id: "tarta-dynia",
-    title: "Tarta z pieczoną dynią i fetą",
-    category: "Kolacja",
-    time: "45 min",
-    servings: "6 porcji",
-    tag: "Sezonowe",
-    description: "Kruchy spód z dodatkiem rozmarynu, karmelizowana dynia hokkaido, słona grecka feta i prażone orzechy włoskie.",
-    isFavorite: false
-  }
-];
+const recipeEntries = await getCollection('recipes');
+
+const catalogRecipes: CatalogRecipe[] = recipeEntries
+  .map((entry) => {
+    const { data } = entry;
+    const mainImage = data.images.find((img) => img.isMain) ?? data.images[0];
+    const ingredientNames = Array.from(
+      new Set(
+        data.ingredientGroups.flatMap((group) =>
+          group.items.map((item) => item.name)
+        )
+      )
+    );
+
+    return {
+      slug: data.slug || entry.id,
+      title: data.title,
+      summary: data.summary,
+      category: data.category,
+      tags: data.tags,
+      totalTimeMinutes: data.totalTimeMinutes,
+      difficulty: data.difficulty,
+      images: mainImage ? [mainImage] : [],
+      videos: data.videos.length > 0 ? [data.videos[0]] : [],
+      ingredientNames,
+      sourceDomain: data.sourceDomain,
+      createdAt: data.createdAt,
+    };
+  })
+  .sort((a, b) => Date.parse(b.createdAt) - Date.parse(a.createdAt));
 ---
 
 <MainLayout title="Ulubione przepisy Kasi">
   <!-- Hero Section -->
-  <section class="py-6 sm:py-10">
+  <section class="pt-2 pb-6 sm:pt-6 sm:pb-8">
     <div class="max-w-3xl">
-      <div class="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-[#4A6B53]/10 text-[#4A6B53] text-xs font-semibold tracking-wide uppercase mb-4">
-        <Sparkles className="w-3.5 h-3.5" />
+      <div class="mb-3 inline-flex items-center gap-2 rounded-full bg-[#4A6B53]/10 px-3 py-1.5 text-xs font-semibold tracking-wide text-[#4A6B53] uppercase sm:mb-4">
+        <Sparkles className="h-3.5 w-3.5" aria-hidden="true" />
         <span>Kulinarny notatnik domowy</span>
       </div>
-      <h2 class="font-serif text-3xl sm:text-4xl lg:text-5xl font-bold tracking-tight text-[#1F2421] leading-tight">
+      <h2 class="font-serif text-3xl font-bold leading-tight tracking-tight text-[#1F2421] sm:text-4xl lg:text-5xl">
         Najlepsze smaki zebrane w jednym miejscu.
       </h2>
-      <p class="mt-4 text-base sm:text-lg text-[#1F2421]/70 leading-relaxed font-normal">
-        Przepisy przetestowane, dopracowane do perfekcji i gotowe na wspólne gotowanie. Znajdziesz tu zarówno szybkie codzienne obiady, jak i słodkie wypieki na wyjątkowe chwile.
+      <p class="mt-3 text-base leading-relaxed font-normal text-[#1F2421]/70 sm:mt-4 sm:text-lg">
+        Przepisy przetestowane, dopracowane i gotowe na wspólne gotowanie. Filtruj po kategoriach, szukaj po ulubionych składnikach i odkrywaj sprawdzone dania.
       </p>
     </div>
   </section>
 
-  <!-- Recipe Grid / Showcase -->
-  <section class="mt-2 mb-12">
-    <div class="flex items-center justify-between mb-6">
-      <div class="flex items-center gap-2">
-        <ChefHat className="w-5 h-5 text-[#4A6B53]" />
-        <h3 class="font-serif text-xl sm:text-2xl font-bold text-[#1F2421]">
-          Polecane na dziś
-        </h3>
-      </div>
-      <span class="text-xs sm:text-sm text-[#1F2421]/60 font-medium">
-        Kolekcja przepisów
-      </span>
-    </div>
-
-    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-      {sampleRecipes.map((recipe) => (
-        <article class="group bg-white rounded-2xl border border-[#EAE5DF] p-5 sm:p-6 shadow-xs hover:shadow-md hover:border-[#4A6B53]/30 transition-all duration-200 flex flex-col justify-between">
-          <div>
-            <div class="flex items-center justify-between gap-2 mb-3">
-              <span class="inline-block px-2.5 py-1 rounded-md text-xs font-semibold bg-[#4A6B53]/10 text-[#4A6B53]">
-                {recipe.category}
-              </span>
-              {recipe.isFavorite ? (
-                <span class="inline-flex items-center gap-1 text-xs font-medium text-[#C86D51] bg-[#C86D51]/10 px-2 py-0.5 rounded-md">
-                  <Heart className="w-3 h-3 fill-current" />
-                  <span>{recipe.tag}</span>
-                </span>
-              ) : (
-                <span class="text-xs text-[#1F2421]/50 font-medium">
-                  {recipe.tag}
-                </span>
-              )}
-            </div>
-
-            <h4 class="font-serif text-lg sm:text-xl font-bold text-[#1F2421] group-hover:text-[#4A6B53] transition-colors line-clamp-2">
-              {recipe.title}
-            </h4>
-
-            <p class="mt-2 text-sm text-[#1F2421]/70 leading-relaxed line-clamp-3">
-              {recipe.description}
-            </p>
-          </div>
-
-          <div class="mt-6 pt-4 border-t border-[#EAE5DF]/70 flex items-center justify-between text-xs text-[#1F2421]/60 font-medium">
-            <div class="flex items-center gap-4">
-              <span class="inline-flex items-center gap-1">
-                <Clock className="w-3.5 h-3.5 text-[#4A6B53]" />
-                {recipe.time}
-              </span>
-              <span class="inline-flex items-center gap-1">
-                <Users className="w-3.5 h-3.5 text-[#C86D51]" />
-                {recipe.servings}
-              </span>
-            </div>
-
-            <a
-              href={withBase(`/przepis/${recipe.id}`)}
-              class="inline-flex items-center gap-1 text-[#4A6B53] font-semibold group-hover:translate-x-0.5 transition-transform"
-            >
-              <span>Zobacz</span>
-              <ArrowRight className="w-3.5 h-3.5" />
-            </a>
-          </div>
-        </article>
-      ))}
-    </div>
-  </section>
+  <!-- Interactive Cookbook Catalog -->
+  <RecipeCatalog client:load recipes={catalogRecipes} />
 </MainLayout>
