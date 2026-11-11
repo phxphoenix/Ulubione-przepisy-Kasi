@@ -1,0 +1,1708 @@
+#!/usr/bin/env python3
+"""AI Agent generating structured Polish recipe JSON files for 'Ulubione przepisy Kasi'."""
+
+from __future__ import annotations
+
+import argparse
+from dataclasses import dataclass
+from datetime import datetime, timezone
+import json
+import os
+from pathlib import Path
+import random
+import re
+import sys
+import time
+from typing import Any, Literal, Optional, Sequence
+from urllib.parse import parse_qs, urljoin, urlparse
+
+from bs4 import BeautifulSoup, Tag
+from google import genai
+from google.genai import errors, types
+from pydantic import BaseModel, Field, field_validator, model_validator
+import requests
+from slugify import slugify
+
+REPO_ROOT = Path(__file__).resolve().parent.parent
+RECIPES_DIR = REPO_ROOT / "src" / "content" / "recipes"
+
+MODEL_CASCADE: tuple[str, ...] = (
+    "gemini-2.5-flash",
+    "gemini-2.5-flash-lite",
+    "gemini-2.0-flash",
+)
+RETRY_DELAYS_SECONDS: tuple[float, ...] = (2.0, 5.0)
+MAX_SERVER_RETRY_DELAY = 20.0
+REQUEST_TIMEOUT_HTML = 20
+REQUEST_TIMEOUT_JINA = 25
+MAX_PROMPT_TEXT_CHARS = 28000
+MAX_JSONLD_CHARS = 16000
+MAX_IMAGE_CANDIDATES = 25
+MIN_IMAGE_DIMENSION_PX = 200
+
+ALLOWED_CATEGORIES: tuple[str, ...] = (
+    "Śniadania",
+    "Zupy",
+    "Dania główne",
+    "Sałatki i przekąski",
+    "Desery i wypieki",
+    "Napoje i dodatki",
+)
+ALLOWED_DIFFICULTIES: tuple[str, ...] = ("Łatwy", "Średni", "Wymagający")
+ALLOWED_VIDEO_PLATFORMS: tuple[str, ...] = ("youtube", "instagram", "tiktok", "mp4")
+
+CategoryName = Literal[
+    "Śniadania",
+    "Zupy",
+    "Dania główne",
+    "Sałatki i przekąski",
+    "Desery i wypieki",
+    "Napoje i dodatki",
+]
+DifficultyLevel = Literal["Łatwy", "Średni", "Wymagający"]
+VideoPlatform = Literal["youtube", "instagram", "tiktok", "mp4"]
+
+BROWSER_HEADERS: dict[str, str] = {
+    "User-Agent": (
+        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+        "AppleWebKit/537.36 (KHTML, like Gecko) "
+        "Chrome/135.0.0.0 Safari/537.36"
+    ),
+    "Accept": (
+        "text/html,application/xhtml+xml,application/xml;q=0.9,"
+        "image/avif,image/webp,*/*;q=0.8"
+    ),
+    "Accept-Language": "pl-PL,pl;q=0.9,en-US;q=0.8,en;q=0.7",
+    "Cache-Control": "no-cache",
+}
+
+JINA_HEADERS: dict[str, str] = {
+    "User-Agent": BROWSER_HEADERS["User-Agent"],
+    "Accept": "text/plain, text/markdown;q=0.9, */*;q=0.8",
+}
+
+SYSTEM_INSTRUCTION = """Jesteś redaktorem książki kucharskiej "Ulubione przepisy Kasi".
+
+Twoim zadaniem jest przekształcenie surowych danych ze strony internetowej w kompletny, dopracowany, gotowy do gotowania przepis w formacie JSON zgodnym ze schematem.
+
+Zasady redakcyjne (PRZESTRZEGAJ ICH BEZWZGLĘDNIE):
+1. Język: Twórz treść wyłącznie w języku polskim (z poprawnymi polskimi znakami diakrytycznymi i naturalnym słownictwem kulinarnym). Jeśli źródło jest po angielsku lub w innym języku, przetłumacz w całości tytuł, podsumowanie, tagi, nazwy grup i składników, notatki, kroki przygotowania, wskazówki oraz podpisy zdjęć.
+2. Jednostki metryczne: Przelicz wszystkie jednostki imperialne i anglosaskie na system metryczny oraz polskie miary kuchenne:
+   - objętość płynów: cups / fl oz -> ml lub szklanki (1 cup = 240 ml, 1 szklanka = 250 ml, 1 fl oz = 30 ml),
+   - masa: oz -> g (1 oz ≈ 28 g), lb -> g lub kg (1 lb ≈ 450 g),
+   - miary kuchenne: tbsp -> łyżki, tsp -> łyżeczki,
+   - wymiary: inch -> cm (1 inch ≈ 2,5 cm),
+   - temperatury: °F -> °C zaokrąglone do pełnych 5°C (np. 350°F -> 180°C, 400°F -> 200°C, 425°F -> 220°C).
+   Dla liczb składników zawsze podawaj wartość liczbową w `amount` (ułamki zapisz dziesiętnie, np. 0.5 zamiast 1/2), aby działał przelicznik porcji. Jedynie przy pozycjach bez ilości liczbowej (np. "sól do smaku") ustaw `amount` na null.
+3. Zero dygresji: BEZWZGLĘDNIE usuń wszelkie historie rodzinne autora, wstępy blogowe, anegdoty, marketing, reklamy, polecenia produktów i dygresje. Zostaw wyłącznie czystą esencję kulinarną.
+4. Kategoria: Przypisz przepis dokładnie do jednej z 6 dozwolonych kategorii:
+   `Śniadania`, `Zupy`, `Dania główne`, `Sałatki i przekąski`, `Desery i wypieki`, `Napoje i dodatki`.
+5. Poziom trudności: Wybierz dokładnie jedną wartość: `Łatwy`, `Średni` lub `Wymagający`.
+6. Kroki przygotowania: Rozpisz kroki w sposób przejrzysty, logiczny i przystępny (krok po kroku), numerując je kolejno od 1. Nadaj każdemu krokowi zwięzły tytuł, konkretną instrukcję oraz (gdy warto) krótką wskazówkę techniczną `tip`.
+7. Zdjęcia: Wybierz z dostarczonej listy znalezionych URL-i grafik najlepsze zdjęcie główne potrawy (`isMain: true` — dokładnie jedno zdjęcie główne) oraz opcjonalnie 1–5 dodatkowych zdjęć etapowych/prezentacyjnych (`isMain: false`) wraz z polskim opisem `caption`. Jeśli wybrane zdjęcie etapowe wyraźnie ilustruje konkretny krok, przypisz jego URL do pola `imageUrl` tego kroku. NIGDY nie wymyślaj adresów URL grafik — korzystaj wyłącznie z kandydatów z danych wejściowych.
+8. Wideo: Jeśli w danych wejściowych wykryto linki wideo (YouTube, Instagram, TikTok, MP4), umieść je w tablicy `videos` i skonstruuj dla nich poprawne adresy `embedUrl`, aby działały bezpośrednio na stronie:
+   - YouTube: `https://www.youtube-nocookie.com/embed/ID_FILMU`
+   - Instagram: `https://www.instagram.com/{p|reel|tv}/KOD/embed`
+   - TikTok: `https://www.tiktok.com/embed/v2/ID_FILMU`
+   - MP4: bezpośredni adres URL pliku `.mp4`
+   NIGDY nie wymyślaj linków wideo, jeśli nie zostały wykryte w danych wejściowych.
+"""
+
+NOISE_ANCESTOR_TAGS = frozenset({"nav", "footer", "aside"})
+NOISE_ATTR_RE = re.compile(
+    r"(?:^|[\s_-])(sidebar|comment|comments|avatar|gravatar|author-bio|"
+    r"related-posts|newsletter|social-share|share-buttons|cookie|popup|modal|"
+    r"advert|advertisement|ad-container|sponsored|promo-banner)(?:$|[\s_-])",
+    re.IGNORECASE,
+)
+IMAGE_NOISE_PATH_RE = re.compile(
+    r"(?:^|[/_\-.])(avatar|gravatar|emoji|smilies|favicon|spinner|loader|"
+    r"spacer|pixel|blank|placeholder|doubleclick|googlesyndication|"
+    r"adservice|adsystem|taboola|outbrain|wp-includes)(?:$|[/_\-.])",
+    re.IGNORECASE,
+)
+IMAGE_NOISE_TOKEN_RE = re.compile(
+    r"(?:^|[/_\-\s.])(logo|icon|badge|ads|advert|pin-it|share)(?:$|[/_\-\s.])",
+    re.IGNORECASE,
+)
+URL_DIM_SUFFIX_RE = re.compile(r"-(\d{1,4})x(\d{1,4})(?:\.[a-z0-9]+)?$", re.IGNORECASE)
+MARKDOWN_IMAGE_RE = re.compile(r"!\[([^\]]*)\]\((https?://[^\s)]+)\)")
+RAW_URL_RE = re.compile(r"https?://[^\s<>\"'()\[\]]+")
+YOUTUBE_ID_RE = re.compile(r"^[A-Za-z0-9_-]{6,20}$")
+INSTAGRAM_RE = re.compile(r"instagram\.com/(p|reel|reels|tv)/([^/?#]+)", re.IGNORECASE)
+TIKTOK_VIDEO_RE = re.compile(
+    r"tiktok\.com/(?:@[^/]+/video|embed(?:/v2)?|player/v1)/(\d+)",
+    re.IGNORECASE,
+)
+
+
+def _strip_or_none(value: Optional[str]) -> Optional[str]:
+    if value is None:
+        return None
+    cleaned = value.strip()
+    return cleaned if cleaned else None
+
+
+class RecipeImage(BaseModel):
+    url: str = Field(..., description="Pełny adres URL zdjęcia z dostarczonej listy.")
+    caption: Optional[str] = Field(
+        default=None, description="Krótki podpis zdjęcia po polsku."
+    )
+    isMain: Optional[bool] = Field(
+        default=None,
+        description="Czy to zdjęcie główne potrawy (dokładnie jedno powinno mieć true).",
+    )
+
+    @field_validator("url")
+    @classmethod
+    def validate_url(cls, value: str) -> str:
+        cleaned = value.strip()
+        if not cleaned:
+            raise ValueError("Image URL cannot be empty.")
+        return cleaned
+
+    @field_validator("caption")
+    @classmethod
+    def clean_caption(cls, value: Optional[str]) -> Optional[str]:
+        return _strip_or_none(value)
+
+
+class RecipeVideo(BaseModel):
+    url: str = Field(..., description="Oryginalny adres URL materiału wideo.")
+    platform: VideoPlatform = Field(
+        ..., description="Platforma wideo: youtube, instagram, tiktok lub mp4."
+    )
+    embedUrl: str = Field(
+        ...,
+        description="Poprawny adres URL do osadzenia w iframe lub tagu video.",
+    )
+    title: Optional[str] = Field(
+        default=None, description="Tytuł lub krótki opis wideo po polsku."
+    )
+
+    @field_validator("url", "embedUrl")
+    @classmethod
+    def validate_non_empty_url(cls, value: str) -> str:
+        cleaned = value.strip()
+        if not cleaned:
+            raise ValueError("Video URL/embedUrl cannot be empty.")
+        return cleaned
+
+    @field_validator("title")
+    @classmethod
+    def clean_title(cls, value: Optional[str]) -> Optional[str]:
+        return _strip_or_none(value)
+
+
+class IngredientItem(BaseModel):
+    name: str = Field(..., description="Nazwa składnika po polsku.")
+    amount: Optional[float] = Field(
+        default=None,
+        description="Ilość liczbowa składnika (>= 0) lub null, gdy brak konkretnej miary.",
+    )
+    unit: Optional[str] = Field(
+        default=None, description="Jednostka metryczna lub kuchenna (np. g, ml, łyżki, szt.)."
+    )
+    notes: Optional[str] = Field(
+        default=None, description="Dodatkowe wskazówki (np. drobno posiekana, miękkie)."
+    )
+
+    @field_validator("name")
+    @classmethod
+    def validate_name(cls, value: str) -> str:
+        cleaned = value.strip()
+        if not cleaned:
+            raise ValueError("Ingredient name cannot be empty.")
+        return cleaned
+
+    @field_validator("amount")
+    @classmethod
+    def validate_amount(cls, value: Optional[float]) -> Optional[float]:
+        if value is not None and value < 0:
+            raise ValueError("Ingredient amount cannot be negative.")
+        return value
+
+    @field_validator("unit", "notes")
+    @classmethod
+    def clean_optional_text(cls, value: Optional[str]) -> Optional[str]:
+        return _strip_or_none(value)
+
+
+class IngredientGroup(BaseModel):
+    groupName: Optional[str] = Field(
+        default=None, description="Opcjonalna nazwa sekcji składników po polsku."
+    )
+    items: list[IngredientItem] = Field(
+        ..., description="Lista składników w tej grupie (co najmniej 1)."
+    )
+
+    @field_validator("groupName")
+    @classmethod
+    def clean_group_name(cls, value: Optional[str]) -> Optional[str]:
+        return _strip_or_none(value)
+
+    @field_validator("items")
+    @classmethod
+    def validate_items_non_empty(cls, value: list[IngredientItem]) -> list[IngredientItem]:
+        if not value:
+            raise ValueError("Ingredient group must contain at least one item.")
+        return value
+
+
+class RecipeStep(BaseModel):
+    stepNumber: int = Field(..., description="Numer kroku (kolejno od 1).")
+    title: Optional[str] = Field(
+        default=None, description="Zwięzły tytuł kroku po polsku."
+    )
+    instruction: str = Field(
+        ..., description="Przejrzysta instrukcja wykonania kroku po polsku."
+    )
+    tip: Optional[str] = Field(
+        default=None, description="Opcjonalna wskazówka kulinarna do tego kroku."
+    )
+    imageUrl: Optional[str] = Field(
+        default=None,
+        description="Opcjonalny URL zdjęcia etapowego z listy kandydatów ilustrującego ten krok.",
+    )
+
+    @field_validator("stepNumber")
+    @classmethod
+    def validate_step_number(cls, value: int) -> int:
+        if value < 1:
+            raise ValueError("stepNumber must be >= 1.")
+        return value
+
+    @field_validator("instruction")
+    @classmethod
+    def validate_instruction(cls, value: str) -> str:
+        cleaned = value.strip()
+        if not cleaned:
+            raise ValueError("Step instruction cannot be empty.")
+        return cleaned
+
+    @field_validator("title", "tip", "imageUrl")
+    @classmethod
+    def clean_optional_fields(cls, value: Optional[str]) -> Optional[str]:
+        return _strip_or_none(value)
+
+
+class Recipe(BaseModel):
+    """Pydantic schema matching Astro Content Collection (`src/schemas/recipe.ts`) 100%."""
+
+    id: Optional[str] = Field(
+        default=None, description="Identyfikator przepisu (taki sam jak slug)."
+    )
+    slug: str = Field(..., description="Czytelny slug URL bez polskich znaków.")
+    title: str = Field(..., description="Tytuł przepisu po polsku.")
+    summary: str = Field(
+        ..., description="Krótkie, apetyczne podsumowanie przepisu (1-2 zdania po polsku)."
+    )
+    category: CategoryName = Field(
+        ..., description="Jedna z 6 dozwolonych kategorii książki kucharskiej."
+    )
+    tags: list[str] = Field(
+        default_factory=list,
+        description="3 do 6 krótkich polskich tagów opisujących danie.",
+    )
+    prepTimeMinutes: Optional[int] = Field(
+        default=None, description="Czas przygotowania w minutach (>= 0)."
+    )
+    cookTimeMinutes: Optional[int] = Field(
+        default=None, description="Czas gotowania lub pieczenia w minutach (>= 0)."
+    )
+    totalTimeMinutes: int = Field(
+        ..., description="Całkowity czas przygotowania w minutach (>= 1)."
+    )
+    servings: float = Field(..., description="Liczba porcji lub sztuk (> 0).")
+    difficulty: DifficultyLevel = Field(
+        ..., description="Poziom trudności: Łatwy, Średni lub Wymagający."
+    )
+    images: list[RecipeImage] = Field(
+        ..., description="Lista zdjęć potrawy (co najmniej 1, jedno z isMain=true)."
+    )
+    videos: list[RecipeVideo] = Field(
+        default_factory=list,
+        description="Lista filmów wideo z przygotowania wraz z poprawnym embedUrl.",
+    )
+    ingredientGroups: list[IngredientGroup] = Field(
+        ..., description="Lista grup składników (co najmniej 1)."
+    )
+    steps: list[RecipeStep] = Field(
+        ..., description="Kroki przygotowania po polsku (co najmniej 1)."
+    )
+    chefTips: list[str] = Field(
+        default_factory=list,
+        description="Praktyczne wskazówki Szefa Kuchni po polsku.",
+    )
+    sourceUrl: str = Field(..., description="Pełny adres URL strony źródłowej.")
+    sourceDomain: str = Field(
+        ..., description="Domena źródła bez prefiksu www., np. kwestiasmaku.com."
+    )
+    originalLanguage: str = Field(
+        ..., description="Dwuliterowy kod języka źródłowego ISO 639-1, np. en, pl, it."
+    )
+    createdAt: str = Field(..., description="Data utworzenia w formacie ISO 8601.")
+
+    @field_validator("id")
+    @classmethod
+    def clean_id(cls, value: Optional[str]) -> Optional[str]:
+        return _strip_or_none(value)
+
+    @field_validator("slug", "title", "summary", "sourceDomain")
+    @classmethod
+    def validate_non_empty_str(cls, value: str) -> str:
+        cleaned = value.strip()
+        if not cleaned:
+            raise ValueError("Field cannot be empty.")
+        return cleaned
+
+    @field_validator("tags", "chefTips")
+    @classmethod
+    def clean_string_list(cls, values: list[str]) -> list[str]:
+        return [item.strip() for item in values if item and item.strip()]
+
+    @field_validator("prepTimeMinutes", "cookTimeMinutes")
+    @classmethod
+    def validate_non_negative_int(cls, value: Optional[int]) -> Optional[int]:
+        if value is not None and value < 0:
+            raise ValueError("Time in minutes cannot be negative.")
+        return value
+
+    @field_validator("totalTimeMinutes")
+    @classmethod
+    def validate_total_time(cls, value: int) -> int:
+        if value < 1:
+            raise ValueError("totalTimeMinutes must be >= 1.")
+        return value
+
+    @field_validator("servings")
+    @classmethod
+    def validate_servings(cls, value: float) -> float:
+        if value <= 0:
+            raise ValueError("servings must be > 0.")
+        return value
+
+    @field_validator("sourceUrl")
+    @classmethod
+    def validate_source_url(cls, value: str) -> str:
+        cleaned = value.strip()
+        parsed = urlparse(cleaned)
+        if parsed.scheme not in {"http", "https"} or not parsed.netloc:
+            raise ValueError("sourceUrl must be a valid HTTP(S) URL.")
+        return cleaned
+
+    @field_validator("originalLanguage")
+    @classmethod
+    def validate_original_language(cls, value: str) -> str:
+        cleaned = value.strip().lower()
+        if len(cleaned) < 2:
+            raise ValueError("originalLanguage must be at least 2 characters.")
+        return cleaned
+
+    @field_validator("createdAt")
+    @classmethod
+    def validate_created_at(cls, value: str) -> str:
+        cleaned = value.strip()
+        normalized = cleaned.replace("Z", "+00:00")
+        datetime.fromisoformat(normalized)
+        return cleaned
+
+    @model_validator(mode="after")
+    def validate_required_collections(self) -> "Recipe":
+        if not self.images:
+            raise ValueError("Przepis wymaga co najmniej jednego zdjęcia.")
+        if not self.ingredientGroups:
+            raise ValueError("Przepis wymaga co najmniej jednej grupy składników.")
+        if not self.steps:
+            raise ValueError("Przepis wymaga co najmniej jednego kroku przygotowania.")
+        return self
+
+
+@dataclass
+class ImageCandidate:
+    url: str
+    source: str
+    alt: str = ""
+    priority: int = 10
+
+
+@dataclass
+class VideoCandidate:
+    url: str
+    platform: VideoPlatform
+    embed_url: str
+    title: Optional[str] = None
+    source: str = ""
+
+
+@dataclass
+class ExtractedPageData:
+    source_url: str
+    final_url: str
+    language_hint: Optional[str]
+    json_ld_recipes: list[dict[str, Any]]
+    image_candidates: list[ImageCandidate]
+    video_candidates: list[VideoCandidate]
+    html_article_text: str
+    jina_markdown: str
+
+
+def log_info(message: str) -> None:
+    print(f"[INFO] {message}", file=sys.stderr)
+
+
+def log_warn(message: str) -> None:
+    print(f"[WARN] {message}", file=sys.stderr)
+
+
+def validate_input_url(raw_url: str) -> str:
+    cleaned = raw_url.strip()
+    parsed = urlparse(cleaned)
+    if parsed.scheme not in {"http", "https"} or not parsed.netloc:
+        raise ValueError(f"Nieprawidłowy adres URL: {raw_url!r}")
+    return cleaned
+
+
+def extract_source_domain(url: str) -> str:
+    netloc = urlparse(url).netloc.lower()
+    host = netloc.split("@")[-1].split(":")[0]
+    return host.removeprefix("www.")
+
+
+def normalize_url(raw_url: Optional[str], base_url: str) -> Optional[str]:
+    if not raw_url:
+        return None
+    candidate = raw_url.strip()
+    if not candidate:
+        return None
+    lowered = candidate.lower()
+    if lowered.startswith(("data:", "javascript:", "mailto:", "tel:", "#")):
+        return None
+    resolved = urljoin(base_url, candidate)
+    parsed = urlparse(resolved)
+    if parsed.scheme not in {"http", "https"} or not parsed.netloc:
+        return None
+    return resolved
+
+
+def parse_positive_int(value: Any) -> Optional[int]:
+    if value is None or isinstance(value, bool):
+        return None
+    if isinstance(value, (int, float)):
+        parsed = int(value)
+        return parsed if parsed > 0 else None
+    text = str(value).strip().lower()
+    if not text or "%" in text or text == "auto":
+        return None
+    match = re.match(r"^(\d+(?:\.\d+)?)\s*(?:px)?$", text)
+    if not match:
+        return None
+    parsed = int(float(match.group(1)))
+    return parsed if parsed > 0 else None
+
+
+def is_valid_image_candidate(
+    url: str,
+    *,
+    width: Optional[int] = None,
+    height: Optional[int] = None,
+    alt: str = "",
+    classes: str = "",
+    strict_dimensions: bool = True,
+) -> bool:
+    parsed = urlparse(url)
+    path_lower = parsed.path.lower()
+
+    if path_lower.endswith((".svg", ".ico")):
+        return False
+
+    if strict_dimensions:
+        if width is not None and width < MIN_IMAGE_DIMENSION_PX:
+            return False
+        if height is not None and height < MIN_IMAGE_DIMENSION_PX:
+            return False
+
+        dim_match = URL_DIM_SUFFIX_RE.search(path_lower)
+        if dim_match:
+            w_url, h_url = int(dim_match.group(1)), int(dim_match.group(2))
+            if w_url < MIN_IMAGE_DIMENSION_PX or h_url < MIN_IMAGE_DIMENSION_PX:
+                return False
+
+        query = parse_qs(parsed.query)
+        for key in ("w", "width", "h", "height"):
+            for val in query.get(key, []):
+                num = parse_positive_int(val)
+                if num is not None and num < MIN_IMAGE_DIMENSION_PX:
+                    return False
+
+    if IMAGE_NOISE_PATH_RE.search(path_lower):
+        return False
+
+    filename = path_lower.rsplit("/", 1)[-1]
+    if IMAGE_NOISE_TOKEN_RE.search(filename):
+        return False
+    if classes and IMAGE_NOISE_TOKEN_RE.search(classes):
+        return False
+    if alt and IMAGE_NOISE_TOKEN_RE.search(alt):
+        return False
+
+    return True
+
+
+def parse_srcset_best(srcset_value: str, base_url: str) -> Optional[str]:
+    candidates: list[tuple[float, str]] = []
+    for entry in srcset_value.split(","):
+        parts = entry.strip().split()
+        if not parts:
+            continue
+        url = normalize_url(parts[0], base_url)
+        if not url:
+            continue
+        score = 1.0
+        if len(parts) > 1:
+            descriptor = parts[1].strip().lower()
+            if descriptor.endswith("w") and descriptor[:-1].isdigit():
+                width_val = int(descriptor[:-1])
+                if width_val < MIN_IMAGE_DIMENSION_PX:
+                    continue
+                score = float(width_val)
+            elif descriptor.endswith("x"):
+                try:
+                    score = float(descriptor[:-1]) * 1000.0
+                except ValueError:
+                    pass
+        candidates.append((score, url))
+
+    if not candidates:
+        return None
+    candidates.sort(key=lambda item: item[0], reverse=True)
+    return candidates[0][1]
+
+
+def normalize_video_url(
+    raw_url: str,
+    base_url: str,
+    *,
+    title: Optional[str] = None,
+    source: str = "",
+) -> Optional[VideoCandidate]:
+    abs_url = normalize_url(raw_url, base_url)
+    if not abs_url:
+        return None
+
+    parsed = urlparse(abs_url)
+    host = parsed.netloc.lower().removeprefix("www.")
+    path = parsed.path
+
+    # YouTube
+    if host in {"youtu.be", "youtube.com", "m.youtube.com", "youtube-nocookie.com"}:
+        video_id: Optional[str] = None
+        is_short = "/shorts/" in path.lower()
+        segments = [seg for seg in path.split("/") if seg]
+
+        if host == "youtu.be" and segments:
+            video_id = segments[0]
+        else:
+            qs = parse_qs(parsed.query)
+            if qs.get("v"):
+                video_id = qs["v"][0]
+            elif len(segments) >= 2 and segments[0].lower() in {
+                "embed",
+                "shorts",
+                "live",
+                "v",
+            }:
+                video_id = segments[1]
+
+        if video_id and YOUTUBE_ID_RE.match(video_id) and video_id.lower() != "videoseries":
+            canonical_url = (
+                f"https://www.youtube.com/shorts/{video_id}"
+                if is_short
+                else f"https://www.youtube.com/watch?v={video_id}"
+            )
+            return VideoCandidate(
+                url=canonical_url,
+                platform="youtube",
+                embed_url=f"https://www.youtube-nocookie.com/embed/{video_id}",
+                title=_strip_or_none(title),
+                source=source,
+            )
+        return None
+
+    # Instagram
+    ig_match = INSTAGRAM_RE.search(abs_url)
+    if ig_match:
+        raw_kind, shortcode = ig_match.group(1).lower(), ig_match.group(2)
+        kind = "reel" if raw_kind == "reels" else raw_kind
+        return VideoCandidate(
+            url=f"https://www.instagram.com/{kind}/{shortcode}/",
+            platform="instagram",
+            embed_url=f"https://www.instagram.com/{kind}/{shortcode}/embed",
+            title=_strip_or_none(title),
+            source=source,
+        )
+
+    # TikTok
+    tt_match = TIKTOK_VIDEO_RE.search(abs_url)
+    if tt_match:
+        video_id = tt_match.group(1)
+        clean_original = abs_url.split("?", 1)[0] if "/@" in abs_url else (
+            f"https://www.tiktok.com/embed/v2/{video_id}"
+        )
+        return VideoCandidate(
+            url=clean_original,
+            platform="tiktok",
+            embed_url=f"https://www.tiktok.com/embed/v2/{video_id}",
+            title=_strip_or_none(title),
+            source=source,
+        )
+
+    # Direct MP4
+    if parsed.path.lower().endswith(".mp4"):
+        return VideoCandidate(
+            url=abs_url,
+            platform="mp4",
+            embed_url=abs_url,
+            title=_strip_or_none(title),
+            source=source,
+        )
+
+    return None
+
+
+def _is_recipe_type(type_value: Any) -> bool:
+    if isinstance(type_value, str):
+        return type_value.rsplit("/", 1)[-1].lower() == "recipe"
+    if isinstance(type_value, list):
+        return any(_is_recipe_type(item) for item in type_value)
+    return False
+
+
+def _is_video_type(type_value: Any) -> bool:
+    if isinstance(type_value, str):
+        return type_value.rsplit("/", 1)[-1].lower() == "videoobject"
+    if isinstance(type_value, list):
+        return any(_is_video_type(item) for item in type_value)
+    return False
+
+
+def _index_jsonld_ids(node: Any, id_map: dict[str, dict[str, Any]]) -> None:
+    if isinstance(node, dict):
+        node_id = node.get("@id")
+        if isinstance(node_id, str) and node_id.strip() and len(node) > 1:
+            id_map[node_id.strip()] = node
+        for val in node.values():
+            _index_jsonld_ids(val, id_map)
+    elif isinstance(node, list):
+        for item in node:
+            _index_jsonld_ids(item, id_map)
+
+
+def _resolve_jsonld_refs(
+    node: Any, id_map: dict[str, dict[str, Any]], depth: int = 0, seen: Optional[set[str]] = None
+) -> Any:
+    if depth > 6:
+        return node
+    if seen is None:
+        seen = set()
+
+    if isinstance(node, list):
+        return [_resolve_jsonld_refs(item, id_map, depth + 1, seen) for item in node]
+
+    if isinstance(node, dict):
+        if set(node.keys()) == {"@id"} and isinstance(node.get("@id"), str):
+            ref_id = node["@id"].strip()
+            if ref_id in id_map and ref_id not in seen:
+                next_seen = seen | {ref_id}
+                return _resolve_jsonld_refs(id_map[ref_id], id_map, depth + 1, next_seen)
+        return {
+            key: _resolve_jsonld_refs(val, id_map, depth + 1, seen)
+            for key, val in node.items()
+        }
+
+    return node
+
+
+def _collect_jsonld_nodes(
+    node: Any,
+    recipes: list[dict[str, Any]],
+    videos: list[dict[str, Any]],
+) -> None:
+    if isinstance(node, list):
+        for item in node:
+            _collect_jsonld_nodes(item, recipes, videos)
+    elif isinstance(node, dict):
+        node_type = node.get("@type")
+        if _is_recipe_type(node_type):
+            recipes.append(node)
+        elif _is_video_type(node_type):
+            videos.append(node)
+        for key, val in node.items():
+            if key != "@context":
+                _collect_jsonld_nodes(val, recipes, videos)
+
+
+def _extract_images_from_jsonld_field(
+    field: Any, base_url: str, out: list[ImageCandidate]
+) -> None:
+    if isinstance(field, str):
+        abs_url = normalize_url(field, base_url)
+        if abs_url and is_valid_image_candidate(abs_url):
+            out.append(ImageCandidate(url=abs_url, source="jsonld", priority=1))
+    elif isinstance(field, list):
+        for item in field:
+            _extract_images_from_jsonld_field(item, base_url, out)
+    elif isinstance(field, dict):
+        raw_url = field.get("url") or field.get("contentUrl")
+        if isinstance(raw_url, list) and raw_url:
+            raw_url = raw_url[0]
+        if isinstance(raw_url, str):
+            abs_url = normalize_url(raw_url, base_url)
+            width = parse_positive_int(field.get("width"))
+            height = parse_positive_int(field.get("height"))
+            caption = field.get("caption") or field.get("name") or ""
+            if abs_url and is_valid_image_candidate(
+                abs_url, width=width, height=height, alt=str(caption)
+            ):
+                out.append(
+                    ImageCandidate(
+                        url=abs_url,
+                        source="jsonld",
+                        alt=str(caption).strip(),
+                        priority=1,
+                    )
+                )
+
+
+def _extract_videos_from_jsonld_obj(
+    video_obj: Any, base_url: str, source: str, out: list[VideoCandidate]
+) -> None:
+    if isinstance(video_obj, list):
+        for item in video_obj:
+            _extract_videos_from_jsonld_obj(item, base_url, source, out)
+    elif isinstance(video_obj, str):
+        cand = normalize_video_url(video_obj, base_url, source=source)
+        if cand:
+            out.append(cand)
+    elif isinstance(video_obj, dict):
+        title = video_obj.get("name") or video_obj.get("description")
+        title_str = str(title).strip() if isinstance(title, str) else None
+        for key in ("embedUrl", "contentUrl", "url"):
+            raw = video_obj.get(key)
+            if isinstance(raw, str):
+                cand = normalize_video_url(raw, base_url, title=title_str, source=source)
+                if cand:
+                    out.append(cand)
+
+
+def _find_article_root(soup: BeautifulSoup) -> Tag:
+    selectors = (
+        "article",
+        "main",
+        "[role='main']",
+        ".wprm-recipe-container",
+        ".tasty-recipes",
+        ".entry-content",
+        ".post-content",
+        ".recipe-content",
+        "#content",
+    )
+    for selector in selectors:
+        found = soup.select_one(selector)
+        if found is not None:
+            return found
+    return soup.body or soup
+
+
+def _has_noise_ancestor(tag: Tag, root: Tag) -> bool:
+    current = tag.parent
+    while current is not None and current is not root:
+        if current.name in NOISE_ANCESTOR_TAGS:
+            return True
+        if current.name == "header" and root.name not in {"article", "main"}:
+            return True
+        classes = " ".join(current.get("class") or [])
+        elem_id = str(current.get("id") or "")
+        combined = f"{classes} {elem_id}".strip()
+        if combined and NOISE_ATTR_RE.search(combined):
+            return True
+        current = current.parent
+    return False
+
+
+def _extract_img_url_from_tag(img: Tag, base_url: str) -> Optional[str]:
+    for attr in ("data-srcset", "srcset"):
+        val = img.get(attr)
+        if isinstance(val, str) and val.strip():
+            best = parse_srcset_best(val, base_url)
+            if best:
+                return best
+
+    parent = img.parent
+    if isinstance(parent, Tag) and parent.name == "picture":
+        for source_tag in parent.find_all("source"):
+            for attr in ("data-srcset", "srcset"):
+                val = source_tag.get(attr)
+                if isinstance(val, str) and val.strip():
+                    best = parse_srcset_best(val, base_url)
+                    if best:
+                        return best
+
+    for attr in (
+        "data-hi-res-src",
+        "data-full-src",
+        "data-original",
+        "data-lazy-src",
+        "data-src",
+        "data-lazy",
+        "data-url",
+        "src",
+    ):
+        val = img.get(attr)
+        if isinstance(val, str):
+            abs_url = normalize_url(val, base_url)
+            if abs_url:
+                return abs_url
+    return None
+
+
+def _extract_article_text(soup: BeautifulSoup) -> str:
+    root = _find_article_root(soup)
+    clone = BeautifulSoup(str(root), "html.parser")
+    for tag in clone.find_all(["script", "style", "noscript", "svg", "nav", "footer", "aside"]):
+        tag.decompose()
+    for elem in clone.find_all(True):
+        if not getattr(elem, "attrs", None):
+            continue
+        classes = " ".join(elem.get("class") or [])
+        elem_id = str(elem.get("id") or "")
+        if NOISE_ATTR_RE.search(f"{classes} {elem_id}"):
+            elem.decompose()
+    lines = [line.strip() for line in clone.get_text("\n").splitlines()]
+    return "\n".join(line for line in lines if line)
+
+
+def _dedupe_images(candidates: Sequence[ImageCandidate]) -> list[ImageCandidate]:
+    by_url: dict[str, ImageCandidate] = {}
+    for cand in candidates:
+        existing = by_url.get(cand.url)
+        if existing is None:
+            by_url[cand.url] = cand
+        else:
+            if cand.priority < existing.priority:
+                existing.priority = cand.priority
+                existing.source = cand.source
+            if cand.alt and not existing.alt:
+                existing.alt = cand.alt
+    ordered = sorted(by_url.values(), key=lambda item: item.priority)
+    return ordered[:MAX_IMAGE_CANDIDATES]
+
+
+def _dedupe_videos(candidates: Sequence[VideoCandidate]) -> list[VideoCandidate]:
+    by_key: dict[tuple[str, str], VideoCandidate] = {}
+    for cand in candidates:
+        key = (cand.platform, cand.embed_url)
+        existing = by_key.get(key)
+        if existing is None:
+            by_key[key] = cand
+        else:
+            if cand.title and not existing.title:
+                existing.title = cand.title
+            if "/watch?v=" in existing.url and "/shorts/" in cand.url:
+                existing.url = cand.url
+    return list(by_key.values())
+
+
+def _collect_images_from_container(
+    container: Tag, base_url: str, source_label: str
+) -> list[ImageCandidate]:
+    found: list[ImageCandidate] = []
+    for img in container.find_all("img"):
+        if _has_noise_ancestor(img, container):
+            continue
+        img_url = _extract_img_url_from_tag(img, base_url)
+        if not img_url:
+            continue
+        width = parse_positive_int(img.get("width"))
+        height = parse_positive_int(img.get("height"))
+        alt = str(img.get("alt") or "").strip()
+        classes = " ".join(img.get("class") or [])
+        if is_valid_image_candidate(
+            img_url, width=width, height=height, alt=alt, classes=classes
+        ):
+            found.append(
+                ImageCandidate(url=img_url, source=source_label, alt=alt, priority=3)
+            )
+    return found
+
+
+def extract_from_html(url: str) -> Optional[dict[str, Any]]:
+    """Step A: Scrape HTML via requests + BeautifulSoup for JSON-LD, images, videos, and fallback text."""
+    try:
+        response = requests.get(
+            url,
+            headers=BROWSER_HEADERS,
+            timeout=REQUEST_TIMEOUT_HTML,
+            allow_redirects=True,
+        )
+        response.raise_for_status()
+    except requests.RequestException as exc:
+        log_warn(f"Krok A (bezpośredni scraping HTML) nie powiódł się: {exc}")
+        return None
+
+    final_url = response.url or url
+    soup = BeautifulSoup(response.content, "html.parser")
+
+    base_tag = soup.find("base", href=True)
+    base_url = normalize_url(str(base_tag["href"]), final_url) if base_tag else final_url
+    base_url = base_url or final_url
+
+    html_tag = soup.find("html")
+    lang_hint: Optional[str] = None
+    if html_tag and html_tag.get("lang"):
+        lang_hint = str(html_tag["lang"]).strip()[:10]
+
+    json_ld_recipes: list[dict[str, Any]] = []
+    json_ld_videos: list[dict[str, Any]] = []
+    raw_parsed_blocks: list[Any] = []
+    id_map: dict[str, dict[str, Any]] = {}
+
+    for script in soup.find_all("script", attrs={"type": re.compile(r"application/ld\+json", re.I)}):
+        raw_text = (script.string or script.get_text() or "").strip()
+        if not raw_text:
+            continue
+        raw_text = re.sub(r"^\s*<!--|--!?>\s*$", "", raw_text).strip()
+        try:
+            parsed = json.loads(raw_text, strict=False)
+        except json.JSONDecodeError:
+            continue
+        raw_parsed_blocks.append(parsed)
+        _index_jsonld_ids(parsed, id_map)
+
+    for parsed in raw_parsed_blocks:
+        resolved_block = _resolve_jsonld_refs(parsed, id_map)
+        _collect_jsonld_nodes(resolved_block, json_ld_recipes, json_ld_videos)
+
+    images: list[ImageCandidate] = []
+    videos: list[VideoCandidate] = []
+
+    for recipe_obj in json_ld_recipes:
+        if "image" in recipe_obj:
+            _extract_images_from_jsonld_field(recipe_obj["image"], base_url, images)
+        if "video" in recipe_obj:
+            _extract_videos_from_jsonld_obj(
+                recipe_obj["video"], base_url, "jsonld_recipe", videos
+            )
+
+    for vid_obj in json_ld_videos:
+        _extract_videos_from_jsonld_obj(vid_obj, base_url, "jsonld_graph", videos)
+
+    # Meta og:image & twitter:image
+    meta_selectors = (
+        ("meta[property='og:image:secure_url']", "og:image"),
+        ("meta[property='og:image']", "og:image"),
+        ("meta[name='twitter:image']", "twitter:image"),
+        ("meta[itemprop='image']", "itemprop:image"),
+    )
+    for selector, label in meta_selectors:
+        for tag in soup.select(selector):
+            content = tag.get("content")
+            if isinstance(content, str):
+                abs_url = normalize_url(content, base_url)
+                if abs_url and is_valid_image_candidate(abs_url):
+                    images.append(ImageCandidate(url=abs_url, source=label, priority=2))
+
+    # Article <img> tags (fallback to <body> if article root yielded no images)
+    article_root = _find_article_root(soup)
+    article_images = _collect_images_from_container(article_root, base_url, "article-img")
+    if not article_images and soup.body is not None and article_root is not soup.body:
+        article_images = _collect_images_from_container(soup.body, base_url, "body-img")
+    images.extend(article_images)
+
+    # Embedded videos from HTML (iframes, video/source, blockquotes, links)
+    for iframe in soup.find_all("iframe"):
+        raw_title = iframe.get("title")
+        iframe_title = str(raw_title).strip() if raw_title else None
+        for attr in ("src", "data-src", "data-lazy-src"):
+            raw = iframe.get(attr)
+            if isinstance(raw, str):
+                cand = normalize_video_url(
+                    raw, base_url, title=iframe_title, source="iframe"
+                )
+                if cand:
+                    videos.append(cand)
+
+    for video_tag in soup.find_all("video"):
+        for attr in ("src", "data-src"):
+            raw = video_tag.get(attr)
+            if isinstance(raw, str):
+                cand = normalize_video_url(raw, base_url, source="video-tag")
+                if cand:
+                    videos.append(cand)
+        for source_tag in video_tag.find_all("source"):
+            for attr in ("src", "data-src"):
+                raw = source_tag.get(attr)
+                if isinstance(raw, str):
+                    cand = normalize_video_url(raw, base_url, source="video-source")
+                    if cand:
+                        videos.append(cand)
+
+    for ig_quote in soup.select("blockquote.instagram-media[data-instgrm-permalink]"):
+        raw = ig_quote.get("data-instgrm-permalink")
+        if isinstance(raw, str):
+            cand = normalize_video_url(raw, base_url, source="instagram-blockquote")
+            if cand:
+                videos.append(cand)
+
+    for tt_quote in soup.select("blockquote.tiktok-embed"):
+        raw = tt_quote.get("cite")
+        if isinstance(raw, str):
+            cand = normalize_video_url(raw, base_url, source="tiktok-blockquote")
+            if cand:
+                videos.append(cand)
+        elif tt_quote.get("data-video-id"):
+            vid = str(tt_quote["data-video-id"]).strip()
+            if vid.isdigit():
+                videos.append(
+                    VideoCandidate(
+                        url=f"https://www.tiktok.com/embed/v2/{vid}",
+                        platform="tiktok",
+                        embed_url=f"https://www.tiktok.com/embed/v2/{vid}",
+                        source="tiktok-blockquote",
+                    )
+                )
+
+    for anchor in article_root.find_all("a", href=True):
+        if _has_noise_ancestor(anchor, article_root):
+            continue
+        href = anchor.get("href")
+        if isinstance(href, str):
+            anchor_text = anchor.get_text(" ", strip=True)
+            cand = normalize_video_url(
+                href, base_url, title=anchor_text or None, source="article-link"
+            )
+            if cand:
+                videos.append(cand)
+
+    return {
+        "final_url": final_url,
+        "language_hint": lang_hint,
+        "json_ld_recipes": json_ld_recipes,
+        "images": images,
+        "videos": videos,
+        "article_text": _extract_article_text(soup),
+    }
+
+
+def fetch_jina_markdown(url: str) -> Optional[str]:
+    """Step B: Fetch clean markdown representation via r.jina.ai as support/fallback."""
+    jina_url = f"https://r.jina.ai/{url}"
+    try:
+        response = requests.get(
+            jina_url,
+            headers=JINA_HEADERS,
+            timeout=REQUEST_TIMEOUT_JINA,
+        )
+        response.raise_for_status()
+        text = response.text.strip()
+        return text if text else None
+    except requests.RequestException as exc:
+        log_warn(f"Krok B (r.jina.ai) nie powiódł się: {exc}")
+        return None
+
+
+def _extract_media_from_markdown(
+    markdown_text: str, base_url: str
+) -> tuple[list[ImageCandidate], list[VideoCandidate]]:
+    images: list[ImageCandidate] = []
+    videos: list[VideoCandidate] = []
+
+    for alt, raw_url in MARKDOWN_IMAGE_RE.findall(markdown_text):
+        abs_url = normalize_url(raw_url, base_url)
+        if abs_url and is_valid_image_candidate(abs_url, alt=alt):
+            images.append(
+                ImageCandidate(
+                    url=abs_url,
+                    source="jina-markdown",
+                    alt=alt.strip(),
+                    priority=4,
+                )
+            )
+
+    for raw_url in RAW_URL_RE.findall(markdown_text):
+        cleaned = raw_url.rstrip(".,;:!?")
+        cand = normalize_video_url(cleaned, base_url, source="jina-markdown")
+        if cand:
+            videos.append(cand)
+
+    return images, videos
+
+
+def collect_page_data(url: str) -> ExtractedPageData:
+    """Run dual-track extraction (HTML + Jina Reader) and combine media & text."""
+    log_info(f"Pobieranie danych (Krok A - HTML): {url}")
+    html_data = extract_from_html(url)
+
+    log_info(f"Pobieranie czystego tekstu (Krok B - r.jina.ai): {url}")
+    jina_text = fetch_jina_markdown(url)
+
+    if html_data is None and not jina_text:
+        raise RuntimeError(
+            "Nie udało się pobrać treści ani przez bezpośredni scraping HTML, "
+            "ani przez r.jina.ai."
+        )
+
+    final_url = html_data["final_url"] if html_data else url
+    images: list[ImageCandidate] = list(html_data["images"]) if html_data else []
+    videos: list[VideoCandidate] = list(html_data["videos"]) if html_data else []
+
+    if jina_text:
+        jina_images, jina_videos = _extract_media_from_markdown(jina_text, final_url)
+        images.extend(jina_images)
+        videos.extend(jina_videos)
+
+    deduped_images = _dedupe_images(images)
+    deduped_videos = _dedupe_videos(videos)
+
+    return ExtractedPageData(
+        source_url=url,
+        final_url=final_url,
+        language_hint=html_data["language_hint"] if html_data else None,
+        json_ld_recipes=html_data["json_ld_recipes"] if html_data else [],
+        image_candidates=deduped_images,
+        video_candidates=deduped_videos,
+        html_article_text=html_data["article_text"] if html_data else "",
+        jina_markdown=jina_text or "",
+    )
+
+
+def build_prompt(data: ExtractedPageData) -> str:
+    sections: list[str] = [
+        f"URL źródłowy: {data.source_url}",
+        f"Domena źródłowa: {extract_source_domain(data.source_url)}",
+    ]
+    if data.language_hint:
+        sections.append(f"Wykryty atrybut języka strony: {data.language_hint}")
+
+    if data.json_ld_recipes:
+        jsonld_str = json.dumps(data.json_ld_recipes, ensure_ascii=False, indent=2)
+        if len(jsonld_str) > MAX_JSONLD_CHARS:
+            jsonld_str = jsonld_str[:MAX_JSONLD_CHARS] + "\n... [skrócono]"
+        sections.append(f"=== DANE STRUKTURALNE JSON-LD (Schema.org Recipe) ===\n{jsonld_str}")
+
+    if data.image_candidates:
+        img_lines = []
+        for idx, img in enumerate(data.image_candidates, start=1):
+            alt_info = f" | alt: {img.alt}" if img.alt else ""
+            img_lines.append(f"{idx}. [{img.source}] {img.url}{alt_info}")
+        sections.append("=== DOSTĘPNE KANDYDATY ZDJĘĆ (wybierz wyłącznie z tej listy) ===\n" + "\n".join(img_lines))
+    else:
+        sections.append("=== DOSTĘPNE KANDYDATY ZDJĘĆ ===\nBrak wykrytych zdjęć.")
+
+    if data.video_candidates:
+        vid_lines = []
+        for idx, vid in enumerate(data.video_candidates, start=1):
+            title_info = f" | tytuł: {vid.title}" if vid.title else ""
+            vid_lines.append(
+                f"{idx}. [{vid.platform} | {vid.source}] url={vid.url} | embedUrl={vid.embed_url}{title_info}"
+            )
+        sections.append("=== WYKRYTE MATERIAŁY WIDEO ===\n" + "\n".join(vid_lines))
+    else:
+        sections.append("=== WYKRYTE MATERIAŁY WIDEO ===\nBrak wykrytych filmów.")
+
+    jina_text = data.jina_markdown
+    html_text = data.html_article_text
+    if jina_text and html_text:
+        is_jina_error = "Warning: Target URL returned error" in jina_text and len(jina_text) < 600
+        if is_jina_error:
+            combined_text = html_text
+        elif len(jina_text) < 2000:
+            combined_text = f"{jina_text}\n\n--- TEKST Z HTML ---\n{html_text}"
+        else:
+            combined_text = jina_text
+    else:
+        combined_text = jina_text or html_text
+
+    if combined_text:
+        trimmed = combined_text[:MAX_PROMPT_TEXT_CHARS]
+        sections.append(f"=== WYCZYSZCZONA TREŚĆ STRONY ===\n{trimmed}")
+
+    return "\n\n".join(sections)
+
+
+def _extract_server_retry_delay(exc: errors.APIError) -> Optional[float]:
+    details = getattr(exc, "details", None)
+    if not isinstance(details, dict):
+        return None
+    err = details.get("error")
+    if not isinstance(err, dict):
+        return None
+    for item in err.get("details") or []:
+        if isinstance(item, dict) and "retryDelay" in item:
+            match = re.match(r"^(\d+(?:\.\d+)?)s$", str(item["retryDelay"]).strip())
+            if match:
+                return min(float(match.group(1)), MAX_SERVER_RETRY_DELAY)
+    return None
+
+
+def _is_rate_limit_or_transient(exc: errors.APIError) -> bool:
+    code = getattr(exc, "code", None)
+    status = str(getattr(exc, "status", "") or "").upper()
+    msg = str(exc).upper()
+    return (
+        code in {429, 500, 503, 504}
+        or "RESOURCE_EXHAUSTED" in status
+        or "RESOURCE_EXHAUSTED" in msg
+        or "429" in msg
+    )
+
+
+def _strip_code_fences(raw_text: str) -> str:
+    cleaned = raw_text.strip()
+    if cleaned.startswith("```"):
+        cleaned = re.sub(r"^```[a-zA-Z0-9_-]*\s*", "", cleaned)
+        cleaned = re.sub(r"\s*```$", "", cleaned)
+    return cleaned.strip()
+
+
+def call_gemini_with_fallback(api_key: str, prompt: str) -> dict[str, Any]:
+    """Call Gemini API using model cascade (2.5-flash -> 2.5-flash-lite -> 2.0-flash) with retry backoff."""
+    client = genai.Client(api_key=api_key)
+    config = types.GenerateContentConfig(
+        system_instruction=SYSTEM_INSTRUCTION,
+        response_mime_type="application/json",
+        response_schema=Recipe,
+        temperature=0.2,
+    )
+
+    last_error: Optional[Exception] = None
+
+    for model_name in MODEL_CASCADE:
+        total_attempts = 1 + len(RETRY_DELAYS_SECONDS)
+        for attempt in range(total_attempts):
+            try:
+                log_info(
+                    f"Wywołanie Gemini API: model={model_name} (próba {attempt + 1}/{total_attempts})"
+                )
+                response = client.models.generate_content(
+                    model=model_name,
+                    contents=prompt,
+                    config=config,
+                )
+
+                if isinstance(response.parsed, Recipe):
+                    return response.parsed.model_dump()
+
+                raw_text = response.text
+                if raw_text:
+                    return json.loads(_strip_code_fences(raw_text))
+
+                raise ValueError(f"Model {model_name} zwrócił pustą odpowiedź.")
+
+            except errors.APIError as exc:
+                last_error = exc
+                code = getattr(exc, "code", None)
+                if code == 404:
+                    log_warn(f"Model {model_name} niedostępny (404), przełączanie na kolejny model...")
+                    break
+                if _is_rate_limit_or_transient(exc):
+                    if attempt < len(RETRY_DELAYS_SECONDS):
+                        suggested = _extract_server_retry_delay(exc)
+                        base_delay = suggested if suggested is not None else RETRY_DELAYS_SECONDS[attempt]
+                        wait_s = base_delay + random.uniform(0.2, 1.0)
+                        log_warn(
+                            f"Limit/błąd przejściowy ({code}) dla {model_name}. "
+                            f"Ponowienie za {wait_s:.1f}s..."
+                        )
+                        time.sleep(wait_s)
+                        continue
+                    log_warn(
+                        f"Wyczerpano limity/ponowienia dla modelu {model_name} ({code}). "
+                        f"Przełączanie na kolejny model..."
+                    )
+                    break
+                raise
+            except (requests.RequestException, json.JSONDecodeError, ValueError) as exc:
+                last_error = exc
+                if attempt < len(RETRY_DELAYS_SECONDS):
+                    wait_s = RETRY_DELAYS_SECONDS[attempt]
+                    log_warn(f"Błąd odpowiedzi dla {model_name}: {exc}. Ponowienie za {wait_s:.1f}s...")
+                    time.sleep(wait_s)
+                    continue
+                log_warn(f"Przełączanie na kolejny model po błędzie {model_name}: {exc}")
+                break
+
+    raise RuntimeError(
+        f"Wszystkie modele w kaskadzie ({', '.join(MODEL_CASCADE)}) zawiodły. "
+        f"Ostatni błąd: {last_error}"
+    )
+
+
+def generate_unique_slug(title: str, recipes_dir: Path) -> str:
+    """Create a unique, readable slug from the Polish recipe title."""
+    base_slug = slugify(title, lowercase=True, max_length=90, word_boundary=True) or "przepis"
+
+    existing_slugs: set[str] = set()
+    if recipes_dir.exists():
+        for json_file in recipes_dir.glob("*.json"):
+            existing_slugs.add(json_file.stem)
+            try:
+                content = json.loads(json_file.read_text(encoding="utf-8"))
+                if isinstance(content, dict) and isinstance(content.get("slug"), str):
+                    existing_slugs.add(content["slug"].strip())
+            except (OSError, json.JSONDecodeError):
+                pass
+
+    if base_slug not in existing_slugs:
+        return base_slug
+
+    counter = 2
+    while f"{base_slug}-{counter}" in existing_slugs:
+        counter += 1
+    return f"{base_slug}-{counter}"
+
+
+def _sanitize_images(
+    raw_images: Any, extracted_candidates: Sequence[ImageCandidate]
+) -> list[dict[str, Any]]:
+    allowed_urls = {cand.url for cand in extracted_candidates}
+    cleaned: list[dict[str, Any]] = []
+    seen_urls: set[str] = set()
+
+    if isinstance(raw_images, list):
+        for item in raw_images:
+            if not isinstance(item, dict):
+                continue
+            raw_url = _strip_or_none(item.get("url"))
+            if not raw_url:
+                continue
+            parsed = urlparse(raw_url)
+            if parsed.scheme not in {"http", "https"} or not parsed.netloc:
+                continue
+            if allowed_urls and raw_url not in allowed_urls:
+                continue
+            if raw_url in seen_urls:
+                continue
+            seen_urls.add(raw_url)
+            entry: dict[str, Any] = {
+                "url": raw_url,
+                "isMain": bool(item.get("isMain")),
+            }
+            caption = _strip_or_none(item.get("caption"))
+            if caption:
+                entry["caption"] = caption
+            cleaned.append(entry)
+
+    if not cleaned and extracted_candidates:
+        for idx, cand in enumerate(extracted_candidates[:4]):
+            entry = {"url": cand.url, "isMain": idx == 0}
+            if cand.alt:
+                entry["caption"] = cand.alt
+            cleaned.append(entry)
+
+    if not cleaned:
+        raise ValueError("Brak prawidłowych zdjęć potrawy — schemat Astro wymaga co najmniej 1 zdjęcia.")
+
+    main_index = next((i for i, img in enumerate(cleaned) if img.get("isMain")), 0)
+    for idx, img in enumerate(cleaned):
+        img["isMain"] = idx == main_index
+
+    if main_index > 0:
+        main_img = cleaned.pop(main_index)
+        cleaned.insert(0, main_img)
+
+    return cleaned
+
+
+def _sanitize_videos(
+    raw_videos: Any, extracted_videos: Sequence[VideoCandidate], base_url: str
+) -> list[dict[str, Any]]:
+    extracted_by_embed = {(v.platform, v.embed_url): v for v in extracted_videos}
+    sanitized: list[dict[str, Any]] = []
+    seen_keys: set[tuple[str, str]] = set()
+
+    if isinstance(raw_videos, list):
+        for item in raw_videos:
+            if not isinstance(item, dict):
+                continue
+            raw_url = _strip_or_none(item.get("url")) or _strip_or_none(item.get("embedUrl"))
+            if not raw_url:
+                continue
+            normalized = normalize_video_url(
+                raw_url,
+                base_url,
+                title=_strip_or_none(item.get("title")),
+            )
+            if normalized is None:
+                embed_candidate = _strip_or_none(item.get("embedUrl"))
+                if embed_candidate:
+                    normalized = normalize_video_url(
+                        embed_candidate,
+                        base_url,
+                        title=_strip_or_none(item.get("title")),
+                    )
+            if normalized is None:
+                continue
+
+            key = (normalized.platform, normalized.embed_url)
+            if extracted_by_embed and key not in extracted_by_embed:
+                continue
+            if key in seen_keys:
+                continue
+            seen_keys.add(key)
+
+            matched = extracted_by_embed.get(key)
+            entry: dict[str, Any] = {
+                "url": matched.url if matched else normalized.url,
+                "platform": normalized.platform,
+                "embedUrl": normalized.embed_url,
+            }
+            title = normalized.title or (matched.title if matched else None)
+            if title:
+                entry["title"] = title
+            sanitized.append(entry)
+
+    if not sanitized:
+        for cand in extracted_videos:
+            if cand.source == "jsonld_recipe":
+                key = (cand.platform, cand.embed_url)
+                if key not in seen_keys:
+                    seen_keys.add(key)
+                    entry = {
+                        "url": cand.url,
+                        "platform": cand.platform,
+                        "embedUrl": cand.embed_url,
+                    }
+                    if cand.title:
+                        entry["title"] = cand.title
+                    sanitized.append(entry)
+
+    return sanitized
+
+
+def _sanitize_steps(
+    raw_steps: Any, valid_image_urls: set[str]
+) -> list[dict[str, Any]]:
+    cleaned: list[dict[str, Any]] = []
+    if not isinstance(raw_steps, list):
+        return cleaned
+
+    for item in raw_steps:
+        if not isinstance(item, dict):
+            continue
+        instruction = _strip_or_none(item.get("instruction"))
+        if not instruction:
+            continue
+        step: dict[str, Any] = {
+            "stepNumber": len(cleaned) + 1,
+            "instruction": instruction,
+        }
+        title = _strip_or_none(item.get("title"))
+        if title:
+            step["title"] = title
+        tip = _strip_or_none(item.get("tip"))
+        if tip:
+            step["tip"] = tip
+        img_url = _strip_or_none(item.get("imageUrl"))
+        if img_url and (not valid_image_urls or img_url in valid_image_urls):
+            step["imageUrl"] = img_url
+        cleaned.append(step)
+
+    return cleaned
+
+
+def _sanitize_ingredient_groups(raw_groups: Any) -> list[dict[str, Any]]:
+    cleaned_groups: list[dict[str, Any]] = []
+    if not isinstance(raw_groups, list):
+        return cleaned_groups
+
+    for group in raw_groups:
+        if not isinstance(group, dict):
+            continue
+        raw_items = group.get("items")
+        if not isinstance(raw_items, list):
+            continue
+        cleaned_items: list[dict[str, Any]] = []
+        for item in raw_items:
+            if not isinstance(item, dict):
+                continue
+            name = _strip_or_none(item.get("name"))
+            if not name:
+                continue
+            entry: dict[str, Any] = {"name": name}
+            amount = item.get("amount")
+            if isinstance(amount, (int, float)) and not isinstance(amount, bool):
+                if amount >= 0:
+                    entry["amount"] = round(float(amount), 2) if isinstance(amount, float) else amount
+            unit = _strip_or_none(item.get("unit"))
+            if unit:
+                entry["unit"] = unit
+            notes = _strip_or_none(item.get("notes"))
+            if notes:
+                entry["notes"] = notes
+            cleaned_items.append(entry)
+
+        if cleaned_items:
+            group_entry: dict[str, Any] = {"items": cleaned_items}
+            group_name = _strip_or_none(group.get("groupName"))
+            if group_name:
+                group_entry["groupName"] = group_name
+            cleaned_groups.append(group_entry)
+
+    return cleaned_groups
+
+
+def finalize_recipe(
+    raw_recipe: dict[str, Any],
+    extracted: ExtractedPageData,
+    recipes_dir: Path,
+) -> Recipe:
+    """Normalize, ground media URLs, assign deterministic metadata, and validate against Recipe schema."""
+    title = _strip_or_none(raw_recipe.get("title")) or "Przepis kulinarny"
+    slug = generate_unique_slug(title, recipes_dir)
+
+    prep_time = raw_recipe.get("prepTimeMinutes")
+    prep_clean = int(prep_time) if isinstance(prep_time, (int, float)) and prep_time >= 0 else None
+
+    cook_time = raw_recipe.get("cookTimeMinutes")
+    cook_clean = int(cook_time) if isinstance(cook_time, (int, float)) and cook_time >= 0 else None
+
+    total_time = raw_recipe.get("totalTimeMinutes")
+    if isinstance(total_time, (int, float)) and int(total_time) >= 1:
+        total_clean = int(total_time)
+    else:
+        summed = (prep_clean or 0) + (cook_clean or 0)
+        total_clean = summed if summed >= 1 else 15
+
+    servings_raw = raw_recipe.get("servings")
+    servings_clean = (
+        float(servings_raw)
+        if isinstance(servings_raw, (int, float)) and not isinstance(servings_raw, bool) and servings_raw > 0
+        else 4.0
+    )
+    if servings_clean.is_integer():
+        servings_clean = int(servings_clean)
+
+    images = _sanitize_images(raw_recipe.get("images"), extracted.image_candidates)
+    allowed_img_urls = {cand.url for cand in extracted.image_candidates} | {
+        img["url"] for img in images
+    }
+    steps = _sanitize_steps(raw_recipe.get("steps"), allowed_img_urls)
+    videos = _sanitize_videos(
+        raw_recipe.get("videos"), extracted.video_candidates, extracted.final_url
+    )
+    ingredient_groups = _sanitize_ingredient_groups(raw_recipe.get("ingredientGroups"))
+
+    category = raw_recipe.get("category")
+    if category not in ALLOWED_CATEGORIES:
+        category = "Dania główne"
+
+    difficulty = raw_recipe.get("difficulty")
+    if difficulty not in ALLOWED_DIFFICULTIES:
+        difficulty = "Średni"
+
+    orig_lang = _strip_or_none(raw_recipe.get("originalLanguage")) or (
+        extracted.language_hint.split("-")[0].lower() if extracted.language_hint else "en"
+    )
+    if len(orig_lang) < 2:
+        orig_lang = "en"
+
+    created_at = (
+        datetime.now(timezone.utc)
+        .isoformat(timespec="milliseconds")
+        .replace("+00:00", "Z")
+    )
+
+    payload: dict[str, Any] = {
+        "id": slug,
+        "slug": slug,
+        "title": title,
+        "summary": _strip_or_none(raw_recipe.get("summary")) or title,
+        "category": category,
+        "tags": raw_recipe.get("tags") if isinstance(raw_recipe.get("tags"), list) else [],
+        "prepTimeMinutes": prep_clean,
+        "cookTimeMinutes": cook_clean,
+        "totalTimeMinutes": total_clean,
+        "servings": servings_clean,
+        "difficulty": difficulty,
+        "images": images,
+        "videos": videos,
+        "ingredientGroups": ingredient_groups,
+        "steps": steps,
+        "chefTips": raw_recipe.get("chefTips") if isinstance(raw_recipe.get("chefTips"), list) else [],
+        "sourceUrl": extracted.source_url,
+        "sourceDomain": extract_source_domain(extracted.source_url),
+        "originalLanguage": orig_lang,
+        "createdAt": created_at,
+    }
+
+    return Recipe.model_validate(payload)
+
+
+def save_recipe_and_emit_outputs(recipe: Recipe, recipes_dir: Path) -> Path:
+    recipes_dir.mkdir(parents=True, exist_ok=True)
+    output_file = recipes_dir / f"{recipe.slug}.json"
+    serialized = json.dumps(
+        recipe.model_dump(exclude_none=True),
+        indent=2,
+        ensure_ascii=False,
+    )
+    output_file.write_text(serialized + "\n", encoding="utf-8")
+
+    rel_path = f"src/content/recipes/{recipe.slug}.json"
+    print(f"recipe_slug={recipe.slug}")
+    print(f"recipe_path={rel_path}")
+
+    github_output = os.environ.get("GITHUB_OUTPUT", "").strip()
+    if github_output:
+        with open(github_output, "a", encoding="utf-8") as handle:
+            handle.write(f"recipe_slug={recipe.slug}\n")
+            handle.write(f"recipe_path={rel_path}\n")
+
+    return output_file
+
+
+def parse_args(argv: Optional[Sequence[str]] = None) -> argparse.Namespace:
+    parser = argparse.ArgumentParser(
+        description="Generuje przetłumaczony i ustrukturyzowany przepis JSON dla 'Ulubione przepisy Kasi'."
+    )
+    parser.add_argument(
+        "--url",
+        required=True,
+        help="Adres URL strony źródłowej z przepisem.",
+    )
+    return parser.parse_args(argv)
+
+
+def main(argv: Optional[Sequence[str]] = None) -> int:
+    args = parse_args(argv)
+
+    try:
+        url = validate_input_url(args.url)
+    except ValueError as exc:
+        print(f"[ERROR] {exc}", file=sys.stderr)
+        return 1
+
+    api_key = os.environ.get("GEMINI_API_KEY", "").strip()
+    if not api_key:
+        print(
+            "[ERROR] Brak zmiennej środowiskowej GEMINI_API_KEY.",
+            file=sys.stderr,
+        )
+        return 1
+
+    try:
+        extracted = collect_page_data(url)
+        prompt = build_prompt(extracted)
+        raw_recipe = call_gemini_with_fallback(api_key, prompt)
+        recipe = finalize_recipe(raw_recipe, extracted, RECIPES_DIR)
+        saved_path = save_recipe_and_emit_outputs(recipe, RECIPES_DIR)
+        log_info(f"Zapisano przepis: {saved_path}")
+        return 0
+    except Exception as exc:
+        print(f"[ERROR] Nie udało się wygenerować przepisu: {exc}", file=sys.stderr)
+        return 1
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

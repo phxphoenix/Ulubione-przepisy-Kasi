@@ -1,0 +1,118 @@
+name: Dodaj przepis z URL (AI Agent)
+
+on:
+  workflow_dispatch:
+    inputs:
+      recipe_url:
+        description: "Adres URL przepisu do przetworzenia i dodania"
+        required: true
+        type: string
+
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+
+jobs:
+  generate-recipe:
+    name: Generuj przepis przez Agenta AI
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    outputs:
+      recipe_slug: ${{ steps.generate.outputs.recipe_slug }}
+      recipe_path: ${{ steps.generate.outputs.recipe_path }}
+
+    steps:
+      - name: Pobierz najnowszą gałąź main
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: Skonfiguruj Python 3.12 (z cache pip)
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: "pip"
+          cache-dependency-path: "scripts/requirements.txt"
+
+      - name: Zainstaluj zależności Agenta AI
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r scripts/requirements.txt
+
+      - name: Uruchom Agenta AI (generate_recipe.py)
+        id: generate
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          RECIPE_URL: ${{ inputs.recipe_url }}
+        run: |
+          python scripts/generate_recipe.py --url "$RECIPE_URL"
+
+      - name: Zatwierdź i wypchnij nowy przepis na gałąź main
+        env:
+          RECIPE_URL: ${{ inputs.recipe_url }}
+        run: |
+          git config user.name "Kasia AI Chef"
+          git config user.email "kasia-ai-chef@users.noreply.github.com"
+          git add src/content/recipes/
+          if git diff --cached --quiet; then
+            echo "::error::Nie wykryto nowego ani zmienionego przepisu w src/content/recipes/."
+            exit 1
+          fi
+          git commit -m "feat(recipe): dodano przepis z ${RECIPE_URL}"
+          git pull --rebase origin main
+          git push origin main
+
+      - name: Podsumowanie wygenerowanego przepisu
+        if: (!cancelled()) && steps.generate.outputs.recipe_slug != ''
+        run: |
+          {
+            echo "### Dodano nowy przepis"
+            echo "- **Slug:** \`${{ steps.generate.outputs.recipe_slug }}\`"
+            echo "- **Plik:** \`${{ steps.generate.outputs.recipe_path }}\`"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+  deploy-gh-pages:
+    name: Zbuduj i wdróż na GitHub Pages
+    needs: generate-recipe
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+    concurrency:
+      group: "pages"
+      cancel-in-progress: false
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+
+    steps:
+      - name: Pobierz zaktualizowaną gałąź main
+        uses: actions/checkout@v4
+        with:
+          ref: main
+
+      - name: Skonfiguruj Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: "npm"
+
+      - name: Zainstaluj zależności i zbuduj Astro
+        env:
+          GITHUB_ACTIONS: "true"
+        run: |
+          npm ci
+          npm run build
+
+      - name: Prześlij artefakt GitHub Pages
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: ./dist
+
+      - name: Wdróż na GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
