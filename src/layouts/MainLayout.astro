@@ -1,0 +1,92 @@
+---
+import '../styles/global.css';
+import { withBase } from '../utils/paths';
+import { Plus, BookOpen } from 'lucide-react';
+
+interface Props {
+  title?: string;
+  description?: string;
+}
+
+const {
+  title = "Ulubione przepisy Kasi",
+  description = "Domowa kolekcja kulinarnych inspiracji i sprawdzonych przepisów Kasi."
+} = Astro.props;
+
+const homeUrl = withBase('/');
+const addRecipeUrl = withBase('/dodaj');
+---
+
+<!doctype html>
+<html lang="pl" class="h-full bg-[#FAF8F5]">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <link rel="icon" type="image/svg+xml" href={withBase('/favicon.svg')} />
+    <meta name="generator" content={Astro.generator} />
+    <title>{title === "Ulubione przepisy Kasi" ? title : `${title} | Ulubione przepisy Kasi`}</title>
+    <meta name="description" content={description} />
+    <meta name="theme-color" content="#FAF8F5" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+
+    <!-- Google Fonts: Lora & Plus Jakarta Sans with latin-ext -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400..700;1,400..700&family=Plus+Jakarta+Sans:ital,wght@0,400..800;1,400..800&display=swap&subset=latin,latin-ext"
+      rel="stylesheet"
+    />
+  </head>
+  <body class="min-h-full flex flex-col bg-[#FAF8F5] text-[#1F2421] antialiased selection:bg-[#4A6B53]/20 selection:text-[#1F2421]">
+    <!-- Safe-area spacing wrapper for iOS notch/status bar -->
+    <div class="pt-[env(safe-area-inset-top,0px)] bg-[#FAF8F5]/90 backdrop-blur-md sticky top-0 z-40 border-b border-[#EAE5DF] transition-colors">
+      <header class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-3.5 sm:py-4">
+        <div class="flex items-center justify-between gap-4">
+          <!-- Logo & Titles -->
+          <a href={homeUrl} class="group flex items-center gap-3 transition-opacity hover:opacity-90">
+            <div class="w-10 h-10 sm:w-11 sm:h-11 rounded-xl bg-[#4A6B53]/10 border border-[#4A6B53]/20 flex items-center justify-center text-[#4A6B53] shadow-xs group-hover:bg-[#4A6B53]/15 transition-colors">
+              <BookOpen className="w-5 h-5 sm:w-6 sm:h-6 text-[#4A6B53]" />
+            </div>
+            <div>
+              <h1 class="font-serif text-lg sm:text-2xl font-bold tracking-tight text-[#1F2421] leading-tight group-hover:text-[#4A6B53] transition-colors">
+                Ulubione przepisy Kasi
+              </h1>
+              <p class="text-xs sm:text-sm text-[#1F2421]/60 font-medium tracking-wide">
+                Domowa kolekcja kulinarnych inspiracji
+              </p>
+            </div>
+          </a>
+
+          <!-- Action button -->
+          <div class="flex items-center gap-2">
+            <a
+              href={addRecipeUrl}
+              class="inline-flex items-center gap-1.5 px-3.5 py-2 sm:px-4 sm:py-2.5 rounded-lg bg-[#4A6B53] hover:bg-[#3B5542] text-white font-medium text-xs sm:text-sm shadow-sm transition-all duration-150 active:scale-[0.98] focus:outline-none focus:ring-2 focus:ring-[#4A6B53]/50 focus:ring-offset-2 focus:ring-offset-[#FAF8F5]"
+            >
+              <Plus className="w-4 h-4 stroke-[2.5]" />
+              <span class="font-semibold">Dodaj przepis</span>
+            </a>
+          </div>
+        </div>
+      </header>
+    </div>
+
+    <!-- Main Content -->
+    <main class="flex-1 max-w-6xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
+      <slot />
+    </main>
+
+    <!-- Footer with iOS safe area inset -->
+    <footer class="mt-auto border-t border-[#EAE5DF] bg-[#FFFFFF]/70 backdrop-blur-xs pb-[calc(1.5rem+env(safe-area-inset-bottom,0px))] pt-6">
+      <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs sm:text-sm text-[#1F2421]/60">
+        <p class="flex items-center gap-1.5">
+          <span>Stworzone z miłością do dobrej kuchni</span>
+        </p>
+        <p class="text-xs text-[#1F2421]/40">
+          Ulubione przepisy Kasi &copy; {new Date().getFullYear()}
+        </p>
+      </div>
+    </footer>
+  </body>
+</html>
