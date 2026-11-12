@@ -20,8 +20,6 @@ from google import genai
 from google.genai import errors, types
 import groq
 from groq import Groq
-import openai
-from openai import OpenAI
 from pydantic import BaseModel, Field, ValidationError, field_validator, model_validator
 import requests
 from slugify import slugify
@@ -34,19 +32,25 @@ except ImportError:  # pragma: no cover
 REPO_ROOT = Path(__file__).resolve().parent.parent
 RECIPES_DIR = REPO_ROOT / "src" / "content" / "recipes"
 
-VERCEL_AI_GATEWAY_BASE_URL = "https://ai-gateway.vercel.sh/v1"
-VERCEL_MODEL_CASCADE: tuple[str, ...] = (
-    "google/gemini-2.5-flash",
-    "openai/gpt-4o-mini",
+GROQ_EXCLUDED_MODEL_SUBSTRINGS: tuple[str, ...] = (
+    "whisper",
+    "guard",
+    "tts",
+    "embed",
+    "safeguard",
+    "vision",
 )
-GROQ_MODEL_CASCADE: tuple[str, ...] = (
-    "llama-3.3-70b-versatile",
-    "llama-3.1-8b-instant",
+GROQ_MODEL_PRIORITY_KEYWORDS: tuple[str, ...] = (
+    "llama-4-maverick",
+    "llama-4-scout",
+    "gpt-oss-120b",
+    "qwen",
+    "70b",
+    "32b",
+    "gpt-oss-20b",
 )
 DEFAULT_GEMINI_MODELS = (
-    "gemini-3.8-flash,gemini-3.6-flash,gemini-3-flash,"
-    "gemini-3.5-flash-lite,gemini-3.1-flash-lite,"
-    "gemini-2.5-flash,gemini-2.5-flash-lite"
+    "gemini-2.5-flash,gemini-2.5-flash-lite,gemini-2.0-flash,gemini-3-flash-preview"
 )
 GEMINI_MODEL_CASCADE: tuple[str, ...] = tuple(
     model.strip() for model in DEFAULT_GEMINI_MODELS.split(",") if model.strip()
@@ -57,7 +61,6 @@ GEMINI_LITE_THROTTLE_SECONDS = 4.5
 GEMINI_FLASH_THROTTLE_SECONDS = 12.5
 REQUEST_TIMEOUT_HTML = 20
 REQUEST_TIMEOUT_JINA = 25
-REQUEST_TIMEOUT_VERCEL = 60.0
 REQUEST_TIMEOUT_GROQ = 60.0
 FULL_PROMPT_TEXT_CHARS = 35000
 GROQ_PROMPT_TEXT_CHARS = 12000
@@ -1480,7 +1483,7 @@ def _strip_code_fences(raw_text: str) -> str:
 
 
 def _build_json_schema_system_instruction() -> str:
-    """Build system instruction for OpenAI/Groq JSON mode including RecipeSchema JSON Schema."""
+    """Build system instruction for Groq JSON mode including RecipeSchema JSON Schema."""
     schema_json = json.dumps(RecipeSchema.model_json_schema(), ensure_ascii=False)
     current_utc = (
         datetime.now(timezone.utc)
@@ -1498,108 +1501,80 @@ def _build_json_schema_system_instruction() -> str:
     )
 
 
-def call_vercel_ai_gateway_with_fallback(
-    vercel_api_key: str,
-    prompt: str,
-) -> dict[str, Any]:
-    """Tier 1: Call Vercel AI Gateway (OpenAI-compatible endpoint) with model cascade."""
-    client = OpenAI(api_key=vercel_api_key, base_url=VERCEL_AI_GATEWAY_BASE_URL)
-    system_instruction = _build_json_schema_system_instruction()
-    last_error: Optional[Exception] = None
+def _groq_model_rank(model_id: str) -> int:
+    lowered = model_id.lower()
+    for idx, keyword in enumerate(GROQ_MODEL_PRIORITY_KEYWORDS):
+        if keyword in lowered:
+            return idx
+    return len(GROQ_MODEL_PRIORITY_KEYWORDS)
 
-    for model_name in VERCEL_MODEL_CASCADE:
+
+def _get_groq_active_models(client: Groq) -> list[str]:
+    """Fetch active text/JSON models from Groq API, filter non-text models, and sort by quality."""
+    models_resp = client.models.list()
+    raw_models = getattr(models_resp, "data", None)
+    if raw_models is None:
         try:
-            print(
-                f"[AI Agent] [Poziom 1: Vercel AI Gateway] Używam modelu: {model_name}",
-                flush=True,
-            )
-            response = client.chat.completions.create(
-                model=model_name,
-                messages=[
-                    {"role": "system", "content": system_instruction},
-                    {"role": "user", "content": prompt},
-                ],
-                response_format={"type": "json_object"},
-                temperature=0.2,
-                timeout=REQUEST_TIMEOUT_VERCEL,
-            )
+            raw_models = list(models_resp)
+        except TypeError:
+            raw_models = []
 
-            raw_content = response.choices[0].message.content if response.choices else None
-            if not raw_content or not raw_content.strip():
-                raise ValueError(
-                    f"Model Vercel AI Gateway ({model_name}) zwrócił pustą odpowiedź."
-                )
-
-            validated_recipe = RecipeSchema.model_validate_json(_strip_code_fences(raw_content))
-            print(
-                f"[AI Agent] [Poziom 1: Vercel AI Gateway] Przepis wygenerowany przez: {model_name}",
-                flush=True,
-            )
-            return validated_recipe.model_dump()
-
-        except (openai.AuthenticationError, openai.PermissionDeniedError) as exc:
-            last_error = exc
-            print(
-                f"[AI Agent] [Poziom 1: Vercel AI Gateway] Błąd autoryzacji ({model_name}): {exc}",
-                flush=True,
-            )
-            break
-        except openai.APIStatusError as exc:
-            last_error = exc
-            status_code = getattr(exc, "status_code", None)
-            if status_code in {401, 403}:
-                print(
-                    f"[AI Agent] [Poziom 1: Vercel AI Gateway] Błąd autoryzacji HTTP {status_code} ({model_name}): {exc}",
-                    flush=True,
-                )
-                break
-            print(
-                f"[AI Agent] [Poziom 1: Vercel AI Gateway] Błąd API HTTP {status_code} dla {model_name}: {exc}. "
-                "Przełączam na kolejny model...",
-                flush=True,
-            )
-            continue
-        except (
-            openai.RateLimitError,
-            openai.APITimeoutError,
-            openai.APIConnectionError,
-            openai.APIError,
-            TimeoutError,
-            ValidationError,
-            json.JSONDecodeError,
-            ValueError,
-        ) as exc:
-            last_error = exc
-            print(
-                f"[AI Agent] [Poziom 1: Vercel AI Gateway] Błąd dla {model_name}: {exc}. "
-                "Przełączam na kolejny model...",
-                flush=True,
-            )
+    candidates: list[str] = []
+    seen: set[str] = set()
+    for item in raw_models:
+        is_active = (
+            item.get("active", True)
+            if isinstance(item, dict)
+            else getattr(item, "active", True)
+        )
+        if is_active is False:
             continue
 
-    raise RuntimeError(
-        f"Wszystkie modele Vercel AI Gateway ({', '.join(VERCEL_MODEL_CASCADE)}) zawiodły. "
-        f"Ostatni błąd: {last_error}"
+        raw_id = item.get("id") if isinstance(item, dict) else getattr(item, "id", None)
+        model_id = str(raw_id or "").strip()
+        if not model_id or model_id in seen:
+            continue
+
+        lowered = model_id.lower()
+        if any(excluded in lowered for excluded in GROQ_EXCLUDED_MODEL_SUBSTRINGS):
+            continue
+
+        seen.add(model_id)
+        candidates.append(model_id)
+
+    return sorted(candidates, key=_groq_model_rank)
+
+
+def call_groq_with_fallback(groq_key: str, prompt: str) -> dict[str, Any]:
+    """Tier 1: Call Groq Cloud using dynamically discovered active text models."""
+    client = Groq(api_key=groq_key)
+    models_to_try = _get_groq_active_models(client)
+    if not models_to_try:
+        raise RuntimeError(
+            "Brak aktywnych modeli tekstowych Groq dostępnych dla podanego klucza API."
+        )
+
+    print(
+        f"[AI Agent] [Poziom 1: Groq Cloud] Aktywne modele tekstowe ({len(models_to_try)}): "
+        f"{', '.join(models_to_try)}",
+        flush=True,
     )
 
-
-def call_groq_with_fallback(groq_api_key: str, prompt: str) -> dict[str, Any]:
-    """Tier 2: Call Groq Cloud using prioritized chat models with TPM-safe prompt."""
-    client = Groq(api_key=groq_api_key)
+    effective_prompt = _truncate_prompt_article_text(prompt, GROQ_PROMPT_TEXT_CHARS)
     system_instruction = _build_json_schema_system_instruction()
     last_error: Optional[Exception] = None
 
-    for model_name in GROQ_MODEL_CASCADE:
+    for model_name in models_to_try:
         try:
             print(
-                f"[AI Agent] [Poziom 2: Groq Cloud] Używam modelu: {model_name}",
+                f"[AI Agent] [Poziom 1: Groq Cloud] Używam modelu: {model_name}",
                 flush=True,
             )
             response = client.chat.completions.create(
                 model=model_name,
                 messages=[
                     {"role": "system", "content": system_instruction},
-                    {"role": "user", "content": prompt},
+                    {"role": "user", "content": effective_prompt},
                 ],
                 response_format={"type": "json_object"},
                 temperature=0.2,
@@ -1612,15 +1587,22 @@ def call_groq_with_fallback(groq_api_key: str, prompt: str) -> dict[str, Any]:
 
             validated_recipe = RecipeSchema.model_validate_json(_strip_code_fences(raw_content))
             print(
-                f"[AI Agent] [Poziom 2: Groq Cloud] Przepis wygenerowany przez: {model_name}",
+                f"[AI Agent] [Poziom 1: Groq Cloud] Przepis wygenerowany przez: {model_name}",
                 flush=True,
             )
             return validated_recipe.model_dump()
 
+        except (groq.AuthenticationError, groq.PermissionDeniedError) as exc:
+            last_error = exc
+            print(
+                f"[AI Agent] [Poziom 1: Groq Cloud] Błąd autoryzacji ({model_name}): {exc}",
+                flush=True,
+            )
+            break
         except (groq.RateLimitError, groq.APITimeoutError, TimeoutError) as exc:
             last_error = exc
             print(
-                f"[AI Agent] [Poziom 2: Groq Cloud] Limit lub timeout ({model_name}): {exc}. "
+                f"[AI Agent] [Poziom 1: Groq Cloud] Limit lub timeout ({model_name}): {exc}. "
                 "Przełączam na kolejny model...",
                 flush=True,
             )
@@ -1630,12 +1612,12 @@ def call_groq_with_fallback(groq_api_key: str, prompt: str) -> dict[str, Any]:
             status_code = getattr(exc, "status_code", None)
             if status_code in {401, 403}:
                 print(
-                    f"[AI Agent] [Poziom 2: Groq Cloud] Błąd autoryzacji HTTP {status_code}: {exc}",
+                    f"[AI Agent] [Poziom 1: Groq Cloud] Błąd autoryzacji HTTP {status_code}: {exc}",
                     flush=True,
                 )
                 break
             print(
-                f"[AI Agent] [Poziom 2: Groq Cloud] Błąd API HTTP {status_code} dla {model_name}: {exc}. "
+                f"[AI Agent] [Poziom 1: Groq Cloud] Błąd API HTTP {status_code} dla {model_name}: {exc}. "
                 "Przełączam na kolejny model...",
                 flush=True,
             )
@@ -1649,14 +1631,14 @@ def call_groq_with_fallback(groq_api_key: str, prompt: str) -> dict[str, Any]:
         ) as exc:
             last_error = exc
             print(
-                f"[AI Agent] [Poziom 2: Groq Cloud] Błąd dla {model_name}: {exc}. "
+                f"[AI Agent] [Poziom 1: Groq Cloud] Błąd dla {model_name}: {exc}. "
                 "Przełączam na kolejny model...",
                 flush=True,
             )
             continue
 
     raise RuntimeError(
-        f"Wszystkie modele Groq ({', '.join(GROQ_MODEL_CASCADE)}) zawiodły. "
+        f"Wszystkie modele Groq ({', '.join(models_to_try)}) zawiodły. "
         f"Ostatni błąd: {last_error}"
     )
 
@@ -1671,11 +1653,9 @@ def resolve_gemini_models(raw_models: Optional[str] = None) -> list[str]:
     return list(dict.fromkeys(models))
 
 
-def _create_gemini_client(gemini_api_key: str) -> tuple[genai.Client, str]:
-    """Detect key format: 'AQ.' uses Vertex AI mode, otherwise standard Gemini API."""
-    if gemini_api_key.startswith("AQ."):
-        return genai.Client(vertexai=True, api_key=gemini_api_key), "Vertex AI (Gemini)"
-    return genai.Client(api_key=gemini_api_key), "Google Gemini"
+def _create_gemini_client(gemini_key: str) -> tuple[genai.Client, str]:
+    """Always initialize Gemini Developer API client without vertexai=True (free endpoint)."""
+    return genai.Client(api_key=gemini_key), "Google Gemini"
 
 
 def _is_gemini_auth_error(exc: errors.APIError) -> bool:
@@ -1683,8 +1663,7 @@ def _is_gemini_auth_error(exc: errors.APIError) -> bool:
     status = str(getattr(exc, "status", "") or "").upper()
     msg = str(exc).upper()
     return (
-        code in {401, 403}
-        or "PERMISSION_DENIED" in status
+        code == 401
         or "UNAUTHENTICATED" in status
         or "API_KEY_INVALID" in msg
         or "API KEY NOT VALID" in msg
@@ -1693,15 +1672,15 @@ def _is_gemini_auth_error(exc: errors.APIError) -> bool:
 
 
 def _is_gemini_exhausted_or_not_found(exc: errors.APIError) -> bool:
-    """Return True for 429 RESOURCE_EXHAUSTED or 404 NOT_FOUND / unsupported model errors."""
+    """Return True for 403/404/429 model permission, not-found, or quota errors."""
     code = getattr(exc, "code", None)
     status = str(getattr(exc, "status", "") or "").upper()
     msg = str(exc).upper()
-    if code in {429, 404}:
+    if code in {403, 404, 429}:
         return True
-    if "RESOURCE_EXHAUSTED" in status or "RESOURCE_EXHAUSTED" in msg:
+    if any(tok in status for tok in ("RESOURCE_EXHAUSTED", "NOT_FOUND", "PERMISSION_DENIED")):
         return True
-    if "NOT_FOUND" in status:
+    if "RESOURCE_EXHAUSTED" in msg:
         return True
     if code == 400 and any(
         tok in msg for tok in ("NOT FOUND", "NOT SUPPORTED", "DEPRECATED", "UNKNOWN MODEL")
@@ -1736,13 +1715,13 @@ def _transport_exception_types() -> tuple[type[BaseException], ...]:
 
 
 def call_gemini_with_fallback(
-    gemini_api_key: str,
+    gemini_key: str,
     prompt: str,
     *,
     gemini_models: Optional[Sequence[str]] = None,
     exhausted_models: Optional[set[str]] = None,
 ) -> dict[str, Any]:
-    """Tier 3: Optimized Gemini / Vertex AI cascade with exhausted-model memory & Throttling Guard."""
+    """Tier 2: Free Google Gemini Developer API cascade with exhausted-model memory & Throttling Guard."""
     models_to_try = (
         list(dict.fromkeys(m.strip() for m in gemini_models if m.strip()))
         if gemini_models is not None
@@ -1752,7 +1731,7 @@ def call_gemini_with_fallback(
         models_to_try = list(GEMINI_MODEL_CASCADE)
 
     exhausted = exhausted_models if exhausted_models is not None else set()
-    client, provider_label = _create_gemini_client(gemini_api_key)
+    client, provider_label = _create_gemini_client(gemini_key)
     config = types.GenerateContentConfig(
         system_instruction=SYSTEM_INSTRUCTION,
         response_mime_type="application/json",
@@ -1765,7 +1744,7 @@ def call_gemini_with_fallback(
     for model_idx, model_name in enumerate(models_to_try):
         if model_name in exhausted:
             print(
-                f"[AI Agent] [Poziom 3: {provider_label}] Pomijam model {model_name} (w exhausted_models).",
+                f"[AI Agent] [Poziom 2: {provider_label}] Pomijam model {model_name} (w exhausted_models).",
                 flush=True,
             )
             continue
@@ -1775,7 +1754,7 @@ def call_gemini_with_fallback(
         for attempt in range(max_attempts_per_model):
             try:
                 print(
-                    f"[AI Agent] [Poziom 3: {provider_label}] Używam modelu: {model_name} "
+                    f"[AI Agent] [Poziom 2: {provider_label}] Używam modelu: {model_name} "
                     f"(próba {attempt + 1}/{max_attempts_per_model})",
                     flush=True,
                 )
@@ -1787,7 +1766,7 @@ def call_gemini_with_fallback(
 
                 if isinstance(response.parsed, RecipeSchema):
                     print(
-                        f"[AI Agent] [Poziom 3: {provider_label}] Przepis wygenerowany przez: {model_name}",
+                        f"[AI Agent] [Poziom 2: {provider_label}] Przepis wygenerowany przez: {model_name}",
                         flush=True,
                     )
                     return response.parsed.model_dump()
@@ -1798,7 +1777,7 @@ def call_gemini_with_fallback(
                         _strip_code_fences(raw_text)
                     )
                     print(
-                        f"[AI Agent] [Poziom 3: {provider_label}] Przepis wygenerowany przez: {model_name}",
+                        f"[AI Agent] [Poziom 2: {provider_label}] Przepis wygenerowany przez: {model_name}",
                         flush=True,
                     )
                     return validated_recipe.model_dump()
@@ -1808,25 +1787,25 @@ def call_gemini_with_fallback(
             except errors.APIError as exc:
                 last_error = exc
                 code = getattr(exc, "code", None)
-                if _is_gemini_auth_error(exc):
-                    print(
-                        f"[AI Agent] [Poziom 3: {provider_label}] Błąd autoryzacji ({code}): {exc}",
-                        flush=True,
-                    )
-                    raise
                 if _is_gemini_exhausted_or_not_found(exc):
                     exhausted.add(model_name)
                     print(
-                        f"[AI Agent] [Poziom 3: {provider_label}] Model {model_name} niedostępny/wyczerpany "
-                        f"(kod={code}). Dodaję do exhausted_models i przełączam natychmiast...",
+                        f"[AI Agent] [Poziom 2: {provider_label}] Model {model_name} niedostępny/wyczerpany/brak uprawnień "
+                        f"(kod={code}): {exc}. Przechodzę na kolejny model...",
                         flush=True,
                     )
                     break
+                if _is_gemini_auth_error(exc):
+                    print(
+                        f"[AI Agent] [Poziom 2: {provider_label}] Błąd autoryzacji ({code}): {exc}",
+                        flush=True,
+                    )
+                    raise
                 if _is_gemini_transient_503(exc):
                     delay = _get_gemini_throttle_delay(model_name)
                     if attempt + 1 < max_attempts_per_model:
                         print(
-                            f"[AI Agent] [Poziom 3: {provider_label}] Przeciążenie/błąd {code} dla {model_name}. "
+                            f"[AI Agent] [Poziom 2: {provider_label}] Przeciążenie/błąd {code} dla {model_name}. "
                             f"Throttling Guard: czekam {delay:.1f}s przed ponowieniem...",
                             flush=True,
                         )
@@ -1834,7 +1813,7 @@ def call_gemini_with_fallback(
                         continue
                     if has_next_model:
                         print(
-                            f"[AI Agent] [Poziom 3: {provider_label}] Utrzymujący się błąd {code} dla {model_name}. "
+                            f"[AI Agent] [Poziom 2: {provider_label}] Utrzymujący się błąd {code} dla {model_name}. "
                             f"Throttling Guard: czekam {delay:.1f}s przed przełączeniem na kolejny model...",
                             flush=True,
                         )
@@ -1846,7 +1825,7 @@ def call_gemini_with_fallback(
                 delay = _get_gemini_throttle_delay(model_name)
                 if attempt + 1 < max_attempts_per_model:
                     print(
-                        f"[AI Agent] [Poziom 3: {provider_label}] Błąd sieci/odpowiedzi dla {model_name}: {exc}. "
+                        f"[AI Agent] [Poziom 2: {provider_label}] Błąd sieci/odpowiedzi dla {model_name}: {exc}. "
                         f"Throttling Guard: czekam {delay:.1f}s przed ponowieniem...",
                         flush=True,
                     )
@@ -1854,7 +1833,7 @@ def call_gemini_with_fallback(
                     continue
                 if has_next_model:
                     print(
-                        f"[AI Agent] [Poziom 3: {provider_label}] Błąd sieci/odpowiedzi dla {model_name}: {exc}. "
+                        f"[AI Agent] [Poziom 2: {provider_label}] Błąd sieci/odpowiedzi dla {model_name}: {exc}. "
                         f"Throttling Guard: czekam {delay:.1f}s przed przełączeniem na kolejny model...",
                         flush=True,
                     )
@@ -1870,39 +1849,22 @@ def call_gemini_with_fallback(
 def call_ai_with_fallback(
     prompt: str,
     *,
-    vercel_api_key: str = "",
     groq_api_key: str = "",
     gemini_api_key: str = "",
     groq_prompt: Optional[str] = None,
     gemini_models: Optional[Sequence[str]] = None,
     exhausted_models: Optional[set[str]] = None,
 ) -> dict[str, Any]:
-    """Run 3-tier Multi-Provider AI router: Vercel AI Gateway -> Groq Cloud -> Gemini/Vertex AI."""
-    vercel_key = vercel_api_key.strip()
+    """Run 2-tier free Multi-Provider AI router: Groq Cloud -> Gemini Developer API."""
     groq_key = groq_api_key.strip()
     gemini_key = gemini_api_key.strip()
 
-    if not vercel_key and not groq_key and not gemini_key:
+    if not groq_key and not gemini_key:
         raise RuntimeError(
-            "Brak skonfigurowanych kluczy API (AI_GATEWAY_API_KEY, GROQ_API_KEY ani GEMINI_API_KEY)."
+            "Brak skonfigurowanych kluczy API (GROQ_API_KEY ani GEMINI_API_KEY)."
         )
 
     errors_by_tier: list[str] = []
-
-    if vercel_key:
-        try:
-            return call_vercel_ai_gateway_with_fallback(vercel_key, prompt)
-        except Exception as exc:
-            errors_by_tier.append(f"Vercel AI Gateway: {exc}")
-            print(
-                f"[AI Agent] Poziom 1 (Vercel AI Gateway) zawiódł ({exc}). Przechodzę do Poziomu 2 (Groq Cloud)...",
-                flush=True,
-            )
-    else:
-        print(
-            "[AI Agent] Brak AI_GATEWAY_API_KEY — pomijam Poziom 1 i przechodzę do Poziomu 2 (Groq Cloud)...",
-            flush=True,
-        )
 
     if groq_key:
         effective_groq_prompt = (
@@ -1915,12 +1877,12 @@ def call_ai_with_fallback(
         except Exception as exc:
             errors_by_tier.append(f"Groq Cloud: {exc}")
             print(
-                f"[AI Agent] Poziom 2 (Groq Cloud) zawiódł ({exc}). Przechodzę do Poziomu 3 (Google Gemini / Vertex AI)...",
+                f"[AI Agent] Poziom 1 (Groq Cloud) zawiódł ({exc}). Przechodzę do Poziomu 2 (Google Gemini Developer API)...",
                 flush=True,
             )
     else:
         print(
-            "[AI Agent] Brak GROQ_API_KEY — pomijam Poziom 2 i przechodzę do Poziomu 3 (Google Gemini / Vertex AI)...",
+            "[AI Agent] Brak GROQ_API_KEY — pomijam Poziom 1 i przechodzę do Poziomu 2 (Google Gemini Developer API)...",
             flush=True,
         )
 
@@ -1933,7 +1895,7 @@ def call_ai_with_fallback(
         )
 
     raise RuntimeError(
-        "Wszystkie dostępne poziomy dostawców AI zawiodły, a GEMINI_API_KEY nie jest ustawiony. "
+        "Poziom 1 (Groq Cloud) zawiódł, a GEMINI_API_KEY nie jest ustawiony. "
         + " | ".join(errors_by_tier)
     )
 
@@ -2283,12 +2245,11 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
         print(f"[ERROR] {exc}", file=sys.stderr)
         return 1
 
-    vercel_api_key = os.environ.get("AI_GATEWAY_API_KEY", "").strip()
     groq_api_key = os.environ.get("GROQ_API_KEY", "").strip()
     gemini_api_key = os.environ.get("GEMINI_API_KEY", "").strip()
-    if not vercel_api_key and not groq_api_key and not gemini_api_key:
+    if not groq_api_key and not gemini_api_key:
         print(
-            "[ERROR] Brak zmiennych środowiskowych AI_GATEWAY_API_KEY, GROQ_API_KEY oraz GEMINI_API_KEY.",
+            "[ERROR] Brak zmiennych środowiskowych GROQ_API_KEY oraz GEMINI_API_KEY.",
             file=sys.stderr,
         )
         return 1
@@ -2299,7 +2260,6 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
         groq_prompt = build_prompt(extracted, max_text_chars=GROQ_PROMPT_TEXT_CHARS)
         raw_recipe = call_ai_with_fallback(
             full_prompt,
-            vercel_api_key=vercel_api_key,
             groq_api_key=groq_api_key,
             gemini_api_key=gemini_api_key,
             groq_prompt=groq_prompt,
