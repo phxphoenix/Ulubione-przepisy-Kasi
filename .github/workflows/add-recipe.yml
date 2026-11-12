@@ -22,6 +22,8 @@ jobs:
     outputs:
       recipe_slug: ${{ steps.generate.outputs.recipe_slug }}
       recipe_path: ${{ steps.generate.outputs.recipe_path }}
+    env:
+      RECIPE_URL: ${{ inputs.recipe_url }}
 
     steps:
       - name: Pobierz najnowszą gałąź main
@@ -46,9 +48,9 @@ jobs:
         id: generate
         env:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
           GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
           GEMINI_MODELS: "gemini-3.8-flash,gemini-3.5-flash-lite,gemini-3.6-flash,gemini-3-flash,gemini-3.1-flash-lite"
-          RECIPE_URL: ${{ inputs.recipe_url }}
         run: |
           python scripts/generate_recipe.py --url "$RECIPE_URL"
 

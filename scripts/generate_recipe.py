@@ -20,6 +20,8 @@ from google import genai
 from google.genai import errors, types
 import groq
 from groq import Groq
+import openai
+from openai import OpenAI
 from pydantic import BaseModel, Field, ValidationError, field_validator, model_validator
 import requests
 from slugify import slugify
@@ -65,7 +67,9 @@ GEMINI_FLASH_THROTTLE_SECONDS = 12.5
 REQUEST_TIMEOUT_HTML = 20
 REQUEST_TIMEOUT_JINA = 25
 REQUEST_TIMEOUT_GROQ = 60.0
+REQUEST_TIMEOUT_OPENROUTER = 60.0
 FULL_PROMPT_TEXT_CHARS = 35000
+OPENROUTER_PROMPT_TEXT_CHARS = 20000
 GROQ_FALLBACK_TEXT_CHARS = 6500
 GROQ_PROMPT_TEXT_CHARS = 12000
 MAX_PROMPT_TEXT_CHARS = FULL_PROMPT_TEXT_CHARS
@@ -73,6 +77,13 @@ MAX_IMAGE_CANDIDATES = 25
 MIN_IMAGE_DIMENSION_PX = 200
 JINA_TRANSIENT_STATUS_CODES = frozenset({429, 500, 502, 503, 504})
 JINA_USER_AGENT = "ulubione-przepisy-kasi/1.0"
+
+OPENROUTER_FREE_MODELS: tuple[str, ...] = (
+    "openrouter/free",
+    "google/gemma-3-27b-it:free",
+    "meta-llama/llama-3.3-70b-instruct:free",
+    "mistralai/mistral-small-3.1-24b-instruct:free",
+)
 
 ALLOWED_CATEGORIES: tuple[str, ...] = (
     "Śniadania",
@@ -1552,6 +1563,44 @@ def _strip_code_fences(raw_text: str) -> str:
     return cleaned.strip()
 
 
+def _extract_json_block(raw_text: str) -> str:
+    """Strip code fences, thinking tags, and extract the outermost JSON object if needed."""
+    cleaned = _strip_code_fences(raw_text)
+    try:
+        json.loads(cleaned)
+        return cleaned
+    except Exception:
+        pass
+    first_brace = cleaned.find("{")
+    last_brace = cleaned.rfind("}")
+    if first_brace != -1 and last_brace != -1 and last_brace > first_brace:
+        return cleaned[first_brace : last_brace + 1]
+    return cleaned
+
+
+def _prepare_openrouter_prompt(prompt: str) -> str:
+    """Ensure prompt for OpenRouter trims article text to at most 20,000 characters."""
+    return _truncate_prompt_article_text(prompt, OPENROUTER_PROMPT_TEXT_CHARS)
+
+
+def _build_openrouter_system_instruction() -> str:
+    """Build system instruction with schema rules and example JSON structure for OpenRouter."""
+    current_utc = (
+        datetime.now(timezone.utc)
+        .isoformat(timespec="milliseconds")
+        .replace("+00:00", "Z")
+    )
+    return (
+        f"{SYSTEM_INSTRUCTION}\n\n"
+        "WYMAGANY FORMAT WYJŚCIOWY (JSON):\n"
+        "Zwróć WYŁĄCZNIE jeden poprawny obiekt JSON ściśle zgodny ze strukturą poniższego wzorca "
+        "(bez bloków markdown ```json, bez komentarzy i bez dodatkowego tekstu poza JSON-em).\n"
+        "Pola `sourceUrl` i `sourceDomain` przepisz dokładnie z danych wejściowych, "
+        f"`id` ustaw tak samo jak `slug`, a w `createdAt` wpisz datę ISO 8601 (np. \"{current_utc}\").\n"
+        f"Wzorcowa struktura JSON (RecipeSchema):\n{GROQ_RECIPE_EXAMPLE_JSON}"
+    )
+
+
 GROQ_SYSTEM_INSTRUCTION = """Jesteś redaktorem książki kucharskiej "Ulubione przepisy Kasi".
 Przekształć surowe dane ze strony w dopracowany przepis w formacie JSON zgodny ze wzorcem.
 Zasady redakcyjne:
@@ -1677,8 +1726,110 @@ def _get_groq_active_models(client: Groq) -> list[str]:
     return sorted(candidates, key=_groq_model_rank)
 
 
+def call_openrouter_with_fallback(openrouter_key: str, prompt: str) -> dict[str, Any]:
+    """Tier 2: Call OpenRouter Free cascade with OpenAI-compatible client and JSON mode."""
+    client = OpenAI(
+        api_key=openrouter_key,
+        base_url="https://openrouter.ai/api/v1",
+        default_headers={
+            "HTTP-Referer": "https://github.com/phxphoenix/Ulubione-przepisy-Kasi",
+            "X-Title": "Ulubione przepisy Kasi",
+        },
+    )
+    effective_prompt = _prepare_openrouter_prompt(prompt)
+    system_instruction = _build_openrouter_system_instruction()
+    last_error: Optional[Exception] = None
+
+    for model_name in OPENROUTER_FREE_MODELS:
+        try:
+            print(
+                f"[AI Agent] [Poziom 2: OpenRouter Free] Używam modelu: {model_name}",
+                flush=True,
+            )
+            response = client.chat.completions.create(
+                model=model_name,
+                messages=[
+                    {"role": "system", "content": system_instruction},
+                    {"role": "user", "content": effective_prompt},
+                ],
+                response_format={"type": "json_object"},
+                temperature=0.2,
+                timeout=REQUEST_TIMEOUT_OPENROUTER,
+            )
+
+            raw_content = response.choices[0].message.content if response.choices else None
+            if not raw_content or not raw_content.strip():
+                raise ValueError(f"Model OpenRouter ({model_name}) zwrócił pustą odpowiedź.")
+
+            cleaned_json = _extract_json_block(raw_content)
+            validated_recipe = RecipeSchema.model_validate_json(cleaned_json)
+            print(
+                f"[AI Agent] [Poziom 2: OpenRouter Free] Przepis wygenerowany przez: {model_name}",
+                flush=True,
+            )
+            return validated_recipe.model_dump()
+
+        except (openai.AuthenticationError, openai.PermissionDeniedError) as exc:
+            last_error = exc
+            print(
+                f"[AI Agent] [Poziom 2: OpenRouter Free] Błąd autoryzacji ({model_name}): {exc}",
+                flush=True,
+            )
+            break
+        except (openai.RateLimitError, openai.APITimeoutError, TimeoutError) as exc:
+            last_error = exc
+            print(
+                f"[AI Agent] [Poziom 2: OpenRouter Free] Limit lub timeout ({model_name}): {exc}. "
+                "Przełączam na kolejny model...",
+                flush=True,
+            )
+            continue
+        except openai.APIStatusError as exc:
+            last_error = exc
+            status_code = getattr(exc, "status_code", None)
+            if status_code == 401:
+                print(
+                    f"[AI Agent] [Poziom 2: OpenRouter Free] Błąd autoryzacji HTTP 401: {exc}",
+                    flush=True,
+                )
+                break
+            print(
+                f"[AI Agent] [Poziom 2: OpenRouter Free] Błąd HTTP {status_code} dla {model_name}: {exc}. "
+                "Przełączam na kolejny model...",
+                flush=True,
+            )
+            continue
+        except (
+            openai.APIConnectionError,
+            openai.APIError,
+            ValidationError,
+            json.JSONDecodeError,
+            ValueError,
+        ) as exc:
+            last_error = exc
+            print(
+                f"[AI Agent] [Poziom 2: OpenRouter Free] Błąd dla {model_name}: {exc}. "
+                "Przełączam na kolejny model...",
+                flush=True,
+            )
+            continue
+        except Exception as exc:
+            last_error = exc
+            print(
+                f"[AI Agent] [Poziom 2: OpenRouter Free] Nieoczekiwany błąd dla {model_name}: {exc}. "
+                "Przełączam na kolejny model...",
+                flush=True,
+            )
+            continue
+
+    raise RuntimeError(
+        f"Wszystkie modele OpenRouter Free ({', '.join(OPENROUTER_FREE_MODELS)}) zawiodły. "
+        f"Ostatni błąd: {last_error}"
+    )
+
+
 def call_groq_with_fallback(groq_key: str, prompt: str) -> dict[str, Any]:
-    """Tier 2: Call Groq Cloud using dynamically discovered active text models with compact payload."""
+    """Tier 3: Call Groq Cloud using dynamically discovered active text models with compact payload."""
     client = Groq(api_key=groq_key)
     models_to_try = _get_groq_active_models(client)
     if not models_to_try:
@@ -1687,7 +1838,7 @@ def call_groq_with_fallback(groq_key: str, prompt: str) -> dict[str, Any]:
         )
 
     print(
-        f"[AI Agent] [Poziom 2: Groq Cloud] Aktywne modele tekstowe ({len(models_to_try)}): "
+        f"[AI Agent] [Poziom 3: Groq Cloud] Aktywne modele tekstowe ({len(models_to_try)}): "
         f"{', '.join(models_to_try)}",
         flush=True,
     )
@@ -1699,7 +1850,7 @@ def call_groq_with_fallback(groq_key: str, prompt: str) -> dict[str, Any]:
     for model_name in models_to_try:
         try:
             print(
-                f"[AI Agent] [Poziom 2: Groq Cloud] Używam modelu: {model_name}",
+                f"[AI Agent] [Poziom 3: Groq Cloud] Używam modelu: {model_name}",
                 flush=True,
             )
             response = client.chat.completions.create(
@@ -1717,9 +1868,10 @@ def call_groq_with_fallback(groq_key: str, prompt: str) -> dict[str, Any]:
             if not raw_content or not raw_content.strip():
                 raise ValueError(f"Model Groq ({model_name}) zwrócił pustą odpowiedź.")
 
-            validated_recipe = RecipeSchema.model_validate_json(_strip_code_fences(raw_content))
+            cleaned_json = _extract_json_block(raw_content)
+            validated_recipe = RecipeSchema.model_validate_json(cleaned_json)
             print(
-                f"[AI Agent] [Poziom 2: Groq Cloud] Przepis wygenerowany przez: {model_name}",
+                f"[AI Agent] [Poziom 3: Groq Cloud] Przepis wygenerowany przez: {model_name}",
                 flush=True,
             )
             return validated_recipe.model_dump()
@@ -1727,14 +1879,14 @@ def call_groq_with_fallback(groq_key: str, prompt: str) -> dict[str, Any]:
         except (groq.AuthenticationError, groq.PermissionDeniedError) as exc:
             last_error = exc
             print(
-                f"[AI Agent] [Poziom 2: Groq Cloud] Błąd autoryzacji ({model_name}): {exc}",
+                f"[AI Agent] [Poziom 3: Groq Cloud] Błąd autoryzacji ({model_name}): {exc}",
                 flush=True,
             )
             break
         except (groq.RateLimitError, groq.APITimeoutError, TimeoutError) as exc:
             last_error = exc
             print(
-                f"[AI Agent] [Poziom 2: Groq Cloud] Limit lub timeout ({model_name}): {exc}. "
+                f"[AI Agent] [Poziom 3: Groq Cloud] Limit lub timeout ({model_name}): {exc}. "
                 "Przełączam na kolejny model...",
                 flush=True,
             )
@@ -1744,19 +1896,19 @@ def call_groq_with_fallback(groq_key: str, prompt: str) -> dict[str, Any]:
             status_code = getattr(exc, "status_code", None)
             if status_code in {400, 404, 429}:
                 print(
-                    f"[AI Agent] [Poziom 2: Groq Cloud] Błąd HTTP {status_code} dla {model_name}: {exc}. "
+                    f"[AI Agent] [Poziom 3: Groq Cloud] Błąd HTTP {status_code} dla {model_name}: {exc}. "
                     "Przełączam na kolejny model...",
                     flush=True,
                 )
                 continue
             if status_code == 401:
                 print(
-                    f"[AI Agent] [Poziom 2: Groq Cloud] Błąd autoryzacji HTTP 401: {exc}",
+                    f"[AI Agent] [Poziom 3: Groq Cloud] Błąd autoryzacji HTTP 401: {exc}",
                     flush=True,
                 )
                 break
             print(
-                f"[AI Agent] [Poziom 2: Groq Cloud] Błąd API HTTP {status_code} dla {model_name}: {exc}. "
+                f"[AI Agent] [Poziom 3: Groq Cloud] Błąd API HTTP {status_code} dla {model_name}: {exc}. "
                 "Przełączam na kolejny model...",
                 flush=True,
             )
@@ -1770,7 +1922,15 @@ def call_groq_with_fallback(groq_key: str, prompt: str) -> dict[str, Any]:
         ) as exc:
             last_error = exc
             print(
-                f"[AI Agent] [Poziom 2: Groq Cloud] Błąd dla {model_name}: {exc}. "
+                f"[AI Agent] [Poziom 3: Groq Cloud] Błąd dla {model_name}: {exc}. "
+                "Przełączam na kolejny model...",
+                flush=True,
+            )
+            continue
+        except Exception as exc:
+            last_error = exc
+            print(
+                f"[AI Agent] [Poziom 3: Groq Cloud] Nieoczekiwany błąd dla {model_name}: {exc}. "
                 "Przełączam na kolejny model...",
                 flush=True,
             )
@@ -1926,11 +2086,11 @@ def call_gemini_with_fallback(
             except errors.APIError as exc:
                 last_error = exc
                 code = getattr(exc, "code", None)
-                if _is_gemini_exhausted_or_not_found(exc):
+                if code in {403, 404, 429} or _is_gemini_exhausted_or_not_found(exc):
                     exhausted.add(model_name)
                     print(
-                        f"[AI Agent] [Poziom 1: {provider_label}] Model {model_name} niedostępny/wyczerpany/brak uprawnień "
-                        f"(kod={code}): {exc}. Przechodzę na kolejny model...",
+                        f"[AI Agent] [Poziom 1: {provider_label}] Model {model_name} zwrócił błąd {code}: {exc}. "
+                        "Przechodzę na kolejny model z listy...",
                         flush=True,
                     )
                     break
@@ -1989,25 +2149,33 @@ def call_ai_with_fallback(
     prompt: str,
     *,
     gemini_api_key: str = "",
+    openrouter_api_key: str = "",
     groq_api_key: str = "",
+    openrouter_prompt: Optional[str] = None,
     groq_prompt: Optional[str] = None,
     gemini_models: Optional[Sequence[str]] = None,
     exhausted_models: Optional[set[str]] = None,
 ) -> dict[str, Any]:
-    """Run 2-tier free Multi-Provider AI router: Gemini Developer API (Poziom 1) -> Groq Cloud (Poziom 2)."""
+    """Run 3-tier 100% free AI cascade router:
+    Poziom 1: Google Gemini Developer API (GEMINI_API_KEY)
+    Poziom 2: OpenRouter Free (OPENROUTER_API_KEY)
+    Poziom 3: Groq Cloud (GROQ_API_KEY)
+    """
     gemini_key = gemini_api_key.strip()
+    openrouter_key = openrouter_api_key.strip()
     groq_key = groq_api_key.strip()
 
-    if not gemini_key and not groq_key:
+    if not gemini_key and not openrouter_key and not groq_key:
         raise RuntimeError(
-            "Brak skonfigurowanych kluczy API (GEMINI_API_KEY ani GROQ_API_KEY)."
+            "Brak skonfigurowanych kluczy API (GEMINI_API_KEY, OPENROUTER_API_KEY ani GROQ_API_KEY)."
         )
 
     errors_by_tier: list[str] = []
 
-    # Poziom 1: Google Gemini Developer API (główny priorytet)
+    # POZIOM 1: Google Gemini Developer API (główny priorytet)
     if gemini_key:
         try:
+            print("[AI Agent] Uruchamiam Poziom 1: Google Gemini Developer API...", flush=True)
             return call_gemini_with_fallback(
                 gemini_key,
                 prompt,
@@ -2015,40 +2183,61 @@ def call_ai_with_fallback(
                 exhausted_models=exhausted_models,
             )
         except Exception as exc:
-            errors_by_tier.append(f"Google Gemini: {exc}")
+            errors_by_tier.append(f"Google Gemini (Poziom 1): {exc}")
             print(
-                f"[AI Agent] Poziom 1 (Google Gemini Developer API) zawiódł ({exc}). Przechodzę do Poziomu 2 (Groq Cloud)...",
+                f"[AI Agent] Poziom 1 (Google Gemini Developer API) zawiódł ({exc}). "
+                "Przechodzę do kolejnego poziomu...",
                 flush=True,
             )
     else:
         print(
-            "[AI Agent] Brak GEMINI_API_KEY — pomijam Poziom 1 i przechodzę do Poziomu 2 (Groq Cloud)...",
+            "[AI Agent] Brak GEMINI_API_KEY — pomijam Poziom 1 (Google Gemini Developer API)...",
             flush=True,
         )
 
-    # Poziom 2: Groq Cloud (szybki fallback)
-    if groq_key:
-        effective_groq_prompt = (
-            groq_prompt
-            if groq_prompt is not None
-            else prompt
+    # POZIOM 2: OpenRouter Free (Fallback 1)
+    if openrouter_key:
+        effective_openrouter_prompt = (
+            openrouter_prompt if openrouter_prompt is not None else prompt
         )
         try:
-            return call_groq_with_fallback(groq_key, effective_groq_prompt)
+            print("[AI Agent] Uruchamiam Poziom 2: OpenRouter Free...", flush=True)
+            return call_openrouter_with_fallback(openrouter_key, effective_openrouter_prompt)
         except Exception as exc:
-            errors_by_tier.append(f"Groq Cloud: {exc}")
+            errors_by_tier.append(f"OpenRouter Free (Poziom 2): {exc}")
             print(
-                f"[AI Agent] Poziom 2 (Groq Cloud) zawiódł ({exc}).",
+                f"[AI Agent] Poziom 2 (OpenRouter Free) zawiódł ({exc}). "
+                "Przechodzę do kolejnego poziomu...",
                 flush=True,
             )
     else:
         print(
-            "[AI Agent] Brak GROQ_API_KEY — Poziom 2 (Groq Cloud) niedostępny.",
+            "[AI Agent] Brak OPENROUTER_API_KEY — pomijam Poziom 2 (OpenRouter Free)...",
+            flush=True,
+        )
+
+    # POZIOM 3: Groq Cloud (Fallback 2)
+    if groq_key:
+        effective_groq_prompt = (
+            groq_prompt if groq_prompt is not None else prompt
+        )
+        try:
+            print("[AI Agent] Uruchamiam Poziom 3: Groq Cloud...", flush=True)
+            return call_groq_with_fallback(groq_key, effective_groq_prompt)
+        except Exception as exc:
+            errors_by_tier.append(f"Groq Cloud (Poziom 3): {exc}")
+            print(
+                f"[AI Agent] Poziom 3 (Groq Cloud) zawiódł ({exc}).",
+                flush=True,
+            )
+    else:
+        print(
+            "[AI Agent] Brak GROQ_API_KEY — pomijam Poziom 3 (Groq Cloud)...",
             flush=True,
         )
 
     raise RuntimeError(
-        "Poziom 1 (Google Gemini) zawiódł, a Poziom 2 (Groq Cloud) nie powiódł się lub nie jest skonfigurowany. "
+        "Wszystkie aktywne poziomy kaskady AI zawiodły. Błędy: "
         + " | ".join(errors_by_tier)
     )
 
@@ -2383,10 +2572,15 @@ def parse_args(argv: Optional[Sequence[str]] = None) -> argparse.Namespace:
     )
     parser.add_argument(
         "--url",
-        required=True,
+        default=os.environ.get("RECIPE_URL"),
+        required=False,
         help="Adres URL strony źródłowej z przepisem.",
     )
-    return parser.parse_args(argv)
+    args = parser.parse_args(argv)
+    if not args.url or not str(args.url).strip():
+        parser.error("Parametr --url (lub zmienna środowiskowa RECIPE_URL) jest wymagany.")
+    args.url = str(args.url).strip()
+    return args
 
 
 def main(argv: Optional[Sequence[str]] = None) -> int:
@@ -2399,10 +2593,12 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
         return 1
 
     gemini_api_key = os.environ.get("GEMINI_API_KEY", "").strip()
+    openrouter_api_key = os.environ.get("OPENROUTER_API_KEY", "").strip()
     groq_api_key = os.environ.get("GROQ_API_KEY", "").strip()
-    if not gemini_api_key and not groq_api_key:
+    if not gemini_api_key and not openrouter_api_key and not groq_api_key:
         print(
-            "[ERROR] Brak zmiennych środowiskowych GEMINI_API_KEY oraz GROQ_API_KEY.",
+            "[ERROR] Brak skonfigurowanych zmiennych środowiskowych z kluczami API: "
+            "GEMINI_API_KEY, OPENROUTER_API_KEY ani GROQ_API_KEY.",
             file=sys.stderr,
         )
         return 1
@@ -2410,11 +2606,14 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     try:
         extracted = collect_page_data(url)
         full_prompt = build_prompt(extracted, max_text_chars=FULL_PROMPT_TEXT_CHARS)
+        openrouter_prompt = build_prompt(extracted, max_text_chars=OPENROUTER_PROMPT_TEXT_CHARS)
         groq_prompt = build_groq_prompt(extracted)
         raw_recipe = call_ai_with_fallback(
             full_prompt,
             gemini_api_key=gemini_api_key,
+            openrouter_api_key=openrouter_api_key,
             groq_api_key=groq_api_key,
+            openrouter_prompt=openrouter_prompt,
             groq_prompt=groq_prompt,
         )
         recipe = finalize_recipe(raw_recipe, extracted, RECIPES_DIR)
