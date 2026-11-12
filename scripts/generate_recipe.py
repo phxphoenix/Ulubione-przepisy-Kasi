@@ -39,18 +39,21 @@ GROQ_EXCLUDED_MODEL_SUBSTRINGS: tuple[str, ...] = (
     "embed",
     "safeguard",
     "vision",
+    "orpheus",
+    "allam",
 )
 GROQ_MODEL_PRIORITY_KEYWORDS: tuple[str, ...] = (
     "llama-4-maverick",
     "llama-4-scout",
     "gpt-oss-120b",
+    "qwen3.8-27b",
     "qwen",
     "70b",
     "32b",
     "gpt-oss-20b",
 )
 DEFAULT_GEMINI_MODELS = (
-    "gemini-2.5-flash,gemini-2.5-flash-lite,gemini-2.0-flash,gemini-3-flash-preview"
+    "gemini-3.8-flash,gemini-3.5-flash-lite,gemini-3.6-flash,gemini-3-flash,gemini-3.1-flash-lite"
 )
 GEMINI_MODEL_CASCADE: tuple[str, ...] = tuple(
     model.strip() for model in DEFAULT_GEMINI_MODELS.split(",") if model.strip()
@@ -63,6 +66,7 @@ REQUEST_TIMEOUT_HTML = 20
 REQUEST_TIMEOUT_JINA = 25
 REQUEST_TIMEOUT_GROQ = 60.0
 FULL_PROMPT_TEXT_CHARS = 35000
+GROQ_FALLBACK_TEXT_CHARS = 6500
 GROQ_PROMPT_TEXT_CHARS = 12000
 MAX_PROMPT_TEXT_CHARS = FULL_PROMPT_TEXT_CHARS
 MAX_IMAGE_CANDIDATES = 25
@@ -1461,6 +1465,72 @@ def build_prompt(
     return "\n\n".join(sections)
 
 
+def build_groq_prompt(data: ExtractedPageData) -> str:
+    """Build a compact prompt for Groq Cloud under ~7 500 chars (total with system <= 11 000 chars)."""
+    sections: list[str] = [
+        f"URL źródłowy: {data.source_url}",
+        f"Domena źródłowa: {extract_source_domain(data.source_url)}",
+    ]
+    if data.language_hint:
+        sections.append(f"Wykryty atrybut języka strony: {data.language_hint}")
+
+    has_recipe_jsonld = bool(data.json_ld_recipes)
+
+    if has_recipe_jsonld:
+        compact_recipes = _compact_jsonld_recipes(data.json_ld_recipes)
+        jsonld_str = json.dumps(compact_recipes, ensure_ascii=False)
+        sections.append(f"=== DANE STRUKTURALNE JSON-LD (Schema.org Recipe) ===\n{jsonld_str}")
+
+    if data.image_candidates:
+        img_lines = []
+        for idx, img in enumerate(data.image_candidates[:12], start=1):
+            alt_info = f" | alt: {img.alt}" if img.alt else ""
+            img_lines.append(f"{idx}. [{img.source}] {img.url}{alt_info}")
+        sections.append(
+            "=== DOSTĘPNE KANDYDATY ZDJĘĆ (wybierz wyłącznie z tej listy) ===\n" + "\n".join(img_lines)
+        )
+    else:
+        sections.append("=== DOSTĘPNE KANDYDATY ZDJĘĆ ===\nBrak wykrytych zdjęć.")
+
+    if data.video_candidates:
+        vid_lines = []
+        for idx, vid in enumerate(data.video_candidates[:5], start=1):
+            title_info = f" | tytuł: {vid.title}" if vid.title else ""
+            vid_lines.append(
+                f"{idx}. [{vid.platform} | {vid.source}] url={vid.url} | embedUrl={vid.embed_url}{title_info}"
+            )
+        sections.append("=== WYKRYTE MATERIAŁY WIDEO ===\n" + "\n".join(vid_lines))
+    else:
+        sections.append("=== WYKRYTE MATERIAŁY WIDEO ===\nBrak wykrytych filmów.")
+
+    if not has_recipe_jsonld:
+        raw_text = data.jina_markdown or data.html_article_text
+        if raw_text:
+            trimmed = raw_text[:GROQ_FALLBACK_TEXT_CHARS]
+            sections.append(f"=== WYCZYSZCZONA TREŚĆ STRONY ===\n{trimmed}")
+
+    return "\n\n".join(sections)
+
+
+def _prepare_groq_prompt(prompt: str) -> str:
+    """Ensure prompt for Groq stays compact: omit page text if JSON-LD exists, or cap to 6500 chars."""
+    jsonld_marker = "=== DANE STRUKTURALNE JSON-LD (Schema.org Recipe) ==="
+    text_marker = "=== WYCZYSZCZONA TREŚĆ STRONY ===\n"
+
+    idx_text = prompt.find(text_marker)
+    if idx_text == -1:
+        return prompt
+
+    if jsonld_marker in prompt:
+        return prompt[:idx_text].rstrip()
+
+    prefix = prompt[: idx_text + len(text_marker)]
+    body = prompt[idx_text + len(text_marker) :]
+    if len(body) <= GROQ_FALLBACK_TEXT_CHARS:
+        return prompt
+    return prefix + body[:GROQ_FALLBACK_TEXT_CHARS]
+
+
 def _truncate_prompt_article_text(prompt: str, max_text_chars: int) -> str:
     """Ensure fallback callers passing a full prompt still respect Groq's article text cap."""
     marker = "=== WYCZYSZCZONA TREŚĆ STRONY ===\n"
@@ -1482,22 +1552,84 @@ def _strip_code_fences(raw_text: str) -> str:
     return cleaned.strip()
 
 
-def _build_json_schema_system_instruction() -> str:
-    """Build system instruction for Groq JSON mode including RecipeSchema JSON Schema."""
-    schema_json = json.dumps(RecipeSchema.model_json_schema(), ensure_ascii=False)
+GROQ_SYSTEM_INSTRUCTION = """Jesteś redaktorem książki kucharskiej "Ulubione przepisy Kasi".
+Przekształć surowe dane ze strony w dopracowany przepis w formacie JSON zgodny ze wzorcem.
+Zasady redakcyjne:
+1. Język wyłącznie polski (przetłumacz w całości obcojęzyczne źródła).
+2. Jednostki metryczne (g, ml, łyżki, łyżeczki, °C, cm; amount jako liczba lub null dla "do smaku").
+3. Zero blogowych dygresji i marketingu — zostaw wyłącznie czystą esencję kulinarną.
+4. Kategoria (dokładnie jedna z 6): Śniadania, Zupy, Dania główne, Sałatki i przekąski, Desery i wypieki, Napoje i dodatki.
+5. Poziom trudności: Łatwy, Średni lub Wymagający.
+6. Kroki numerowane kolejno od 1, ze zwięzłym tytułem i instrukcją.
+7. Zdjęcia i wideo: wybieraj wyłącznie z dostarczonych kandydatów (dokładnie jedno zdjęcie z isMain=true), nie wymyślaj URL-i."""
+
+GROQ_RECIPE_EXAMPLE_JSON = """{
+  "id": "slug-przepisu",
+  "slug": "slug-przepisu",
+  "title": "Tytuł przepisu po polsku",
+  "summary": "Apetyczne, zwięzłe podsumowanie przepisu (1-2 zdania po polsku).",
+  "category": "Dania główne",
+  "tags": ["danie główne", "obiad"],
+  "prepTimeMinutes": 15,
+  "cookTimeMinutes": 25,
+  "totalTimeMinutes": 40,
+  "servings": 4,
+  "difficulty": "Łatwy",
+  "images": [
+    {
+      "url": "https://domena.pl/zdjecie.jpg",
+      "caption": "Gotowe danie na talerzu",
+      "isMain": true
+    }
+  ],
+  "videos": [],
+  "ingredientGroups": [
+    {
+      "groupName": "Składniki",
+      "items": [
+        {
+          "name": "Mąka pszenna",
+          "amount": 500,
+          "unit": "g",
+          "notes": "przesiana"
+        }
+      ]
+    }
+  ],
+  "steps": [
+    {
+      "stepNumber": 1,
+      "title": "Przygotowanie ciasta",
+      "instruction": "Połącz mąkę z wodą i wyrób jednolite, elastyczne ciasto.",
+      "tip": "Odstaw ciasto pod przykryciem na 15 minut.",
+      "imageUrl": null
+    }
+  ],
+  "chefTips": [
+    "Dla lepszego smaku dodaj szczyptę świeżo mielonego pieprzu."
+  ],
+  "sourceUrl": "https://domena.pl/przepis",
+  "sourceDomain": "domena.pl",
+  "originalLanguage": "pl",
+  "createdAt": "2026-11-12T18:00:00.000Z"
+}"""
+
+
+def _build_groq_system_instruction() -> str:
+    """Build a compact system instruction with an example JSON structure for Groq JSON mode."""
     current_utc = (
         datetime.now(timezone.utc)
         .isoformat(timespec="milliseconds")
         .replace("+00:00", "Z")
     )
     return (
-        f"{SYSTEM_INSTRUCTION}\n"
+        f"{GROQ_SYSTEM_INSTRUCTION}\n\n"
         "WYMAGANY FORMAT WYJŚCIOWY (JSON):\n"
-        "Zwróć WYŁĄCZNIE jeden poprawny obiekt JSON zgodny dokładnie z poniższym schematem JSON Schema "
-        "(bez bloków markdown, bez komentarzy i bez zwracania samej definicji schematu).\n"
+        "Zwróć WYŁĄCZNIE jeden poprawny obiekt JSON ściśle zgodny ze strukturą poniższego wzorca "
+        "(bez bloków markdown ```json, bez komentarzy i bez dodatkowego tekstu poza JSON-em).\n"
         "Pola `sourceUrl` i `sourceDomain` przepisz dokładnie z danych wejściowych, "
-        f"`id` ustaw tak samo jak `slug`, a w `createdAt` wpisz datę w formacie ISO 8601 (np. \"{current_utc}\").\n"
-        f"Schemat JSON (Pydantic RecipeSchema):\n{schema_json}"
+        f"`id` ustaw tak samo jak `slug`, a w `createdAt` wpisz datę ISO 8601 (np. \"{current_utc}\").\n"
+        f"Wzorcowa struktura JSON (RecipeSchema):\n{GROQ_RECIPE_EXAMPLE_JSON}"
     )
 
 
@@ -1546,7 +1678,7 @@ def _get_groq_active_models(client: Groq) -> list[str]:
 
 
 def call_groq_with_fallback(groq_key: str, prompt: str) -> dict[str, Any]:
-    """Tier 1: Call Groq Cloud using dynamically discovered active text models."""
+    """Tier 2: Call Groq Cloud using dynamically discovered active text models with compact payload."""
     client = Groq(api_key=groq_key)
     models_to_try = _get_groq_active_models(client)
     if not models_to_try:
@@ -1555,19 +1687,19 @@ def call_groq_with_fallback(groq_key: str, prompt: str) -> dict[str, Any]:
         )
 
     print(
-        f"[AI Agent] [Poziom 1: Groq Cloud] Aktywne modele tekstowe ({len(models_to_try)}): "
+        f"[AI Agent] [Poziom 2: Groq Cloud] Aktywne modele tekstowe ({len(models_to_try)}): "
         f"{', '.join(models_to_try)}",
         flush=True,
     )
 
-    effective_prompt = _truncate_prompt_article_text(prompt, GROQ_PROMPT_TEXT_CHARS)
-    system_instruction = _build_json_schema_system_instruction()
+    effective_prompt = _prepare_groq_prompt(prompt)
+    system_instruction = _build_groq_system_instruction()
     last_error: Optional[Exception] = None
 
     for model_name in models_to_try:
         try:
             print(
-                f"[AI Agent] [Poziom 1: Groq Cloud] Używam modelu: {model_name}",
+                f"[AI Agent] [Poziom 2: Groq Cloud] Używam modelu: {model_name}",
                 flush=True,
             )
             response = client.chat.completions.create(
@@ -1587,7 +1719,7 @@ def call_groq_with_fallback(groq_key: str, prompt: str) -> dict[str, Any]:
 
             validated_recipe = RecipeSchema.model_validate_json(_strip_code_fences(raw_content))
             print(
-                f"[AI Agent] [Poziom 1: Groq Cloud] Przepis wygenerowany przez: {model_name}",
+                f"[AI Agent] [Poziom 2: Groq Cloud] Przepis wygenerowany przez: {model_name}",
                 flush=True,
             )
             return validated_recipe.model_dump()
@@ -1595,14 +1727,14 @@ def call_groq_with_fallback(groq_key: str, prompt: str) -> dict[str, Any]:
         except (groq.AuthenticationError, groq.PermissionDeniedError) as exc:
             last_error = exc
             print(
-                f"[AI Agent] [Poziom 1: Groq Cloud] Błąd autoryzacji ({model_name}): {exc}",
+                f"[AI Agent] [Poziom 2: Groq Cloud] Błąd autoryzacji ({model_name}): {exc}",
                 flush=True,
             )
             break
         except (groq.RateLimitError, groq.APITimeoutError, TimeoutError) as exc:
             last_error = exc
             print(
-                f"[AI Agent] [Poziom 1: Groq Cloud] Limit lub timeout ({model_name}): {exc}. "
+                f"[AI Agent] [Poziom 2: Groq Cloud] Limit lub timeout ({model_name}): {exc}. "
                 "Przełączam na kolejny model...",
                 flush=True,
             )
@@ -1610,14 +1742,21 @@ def call_groq_with_fallback(groq_key: str, prompt: str) -> dict[str, Any]:
         except groq.APIStatusError as exc:
             last_error = exc
             status_code = getattr(exc, "status_code", None)
-            if status_code in {401, 403}:
+            if status_code in {400, 404, 429}:
                 print(
-                    f"[AI Agent] [Poziom 1: Groq Cloud] Błąd autoryzacji HTTP {status_code}: {exc}",
+                    f"[AI Agent] [Poziom 2: Groq Cloud] Błąd HTTP {status_code} dla {model_name}: {exc}. "
+                    "Przełączam na kolejny model...",
+                    flush=True,
+                )
+                continue
+            if status_code == 401:
+                print(
+                    f"[AI Agent] [Poziom 2: Groq Cloud] Błąd autoryzacji HTTP 401: {exc}",
                     flush=True,
                 )
                 break
             print(
-                f"[AI Agent] [Poziom 1: Groq Cloud] Błąd API HTTP {status_code} dla {model_name}: {exc}. "
+                f"[AI Agent] [Poziom 2: Groq Cloud] Błąd API HTTP {status_code} dla {model_name}: {exc}. "
                 "Przełączam na kolejny model...",
                 flush=True,
             )
@@ -1631,7 +1770,7 @@ def call_groq_with_fallback(groq_key: str, prompt: str) -> dict[str, Any]:
         ) as exc:
             last_error = exc
             print(
-                f"[AI Agent] [Poziom 1: Groq Cloud] Błąd dla {model_name}: {exc}. "
+                f"[AI Agent] [Poziom 2: Groq Cloud] Błąd dla {model_name}: {exc}. "
                 "Przełączam na kolejny model...",
                 flush=True,
             )
@@ -1721,7 +1860,7 @@ def call_gemini_with_fallback(
     gemini_models: Optional[Sequence[str]] = None,
     exhausted_models: Optional[set[str]] = None,
 ) -> dict[str, Any]:
-    """Tier 2: Free Google Gemini Developer API cascade with exhausted-model memory & Throttling Guard."""
+    """Tier 1: Free Google Gemini Developer API cascade with exhausted-model memory & Throttling Guard."""
     models_to_try = (
         list(dict.fromkeys(m.strip() for m in gemini_models if m.strip()))
         if gemini_models is not None
@@ -1744,7 +1883,7 @@ def call_gemini_with_fallback(
     for model_idx, model_name in enumerate(models_to_try):
         if model_name in exhausted:
             print(
-                f"[AI Agent] [Poziom 2: {provider_label}] Pomijam model {model_name} (w exhausted_models).",
+                f"[AI Agent] [Poziom 1: {provider_label}] Pomijam model {model_name} (w exhausted_models).",
                 flush=True,
             )
             continue
@@ -1754,7 +1893,7 @@ def call_gemini_with_fallback(
         for attempt in range(max_attempts_per_model):
             try:
                 print(
-                    f"[AI Agent] [Poziom 2: {provider_label}] Używam modelu: {model_name} "
+                    f"[AI Agent] [Poziom 1: {provider_label}] Używam modelu: {model_name} "
                     f"(próba {attempt + 1}/{max_attempts_per_model})",
                     flush=True,
                 )
@@ -1766,7 +1905,7 @@ def call_gemini_with_fallback(
 
                 if isinstance(response.parsed, RecipeSchema):
                     print(
-                        f"[AI Agent] [Poziom 2: {provider_label}] Przepis wygenerowany przez: {model_name}",
+                        f"[AI Agent] [Poziom 1: {provider_label}] Przepis wygenerowany przez: {model_name}",
                         flush=True,
                     )
                     return response.parsed.model_dump()
@@ -1777,7 +1916,7 @@ def call_gemini_with_fallback(
                         _strip_code_fences(raw_text)
                     )
                     print(
-                        f"[AI Agent] [Poziom 2: {provider_label}] Przepis wygenerowany przez: {model_name}",
+                        f"[AI Agent] [Poziom 1: {provider_label}] Przepis wygenerowany przez: {model_name}",
                         flush=True,
                     )
                     return validated_recipe.model_dump()
@@ -1790,14 +1929,14 @@ def call_gemini_with_fallback(
                 if _is_gemini_exhausted_or_not_found(exc):
                     exhausted.add(model_name)
                     print(
-                        f"[AI Agent] [Poziom 2: {provider_label}] Model {model_name} niedostępny/wyczerpany/brak uprawnień "
+                        f"[AI Agent] [Poziom 1: {provider_label}] Model {model_name} niedostępny/wyczerpany/brak uprawnień "
                         f"(kod={code}): {exc}. Przechodzę na kolejny model...",
                         flush=True,
                     )
                     break
                 if _is_gemini_auth_error(exc):
                     print(
-                        f"[AI Agent] [Poziom 2: {provider_label}] Błąd autoryzacji ({code}): {exc}",
+                        f"[AI Agent] [Poziom 1: {provider_label}] Błąd autoryzacji ({code}): {exc}",
                         flush=True,
                     )
                     raise
@@ -1805,7 +1944,7 @@ def call_gemini_with_fallback(
                     delay = _get_gemini_throttle_delay(model_name)
                     if attempt + 1 < max_attempts_per_model:
                         print(
-                            f"[AI Agent] [Poziom 2: {provider_label}] Przeciążenie/błąd {code} dla {model_name}. "
+                            f"[AI Agent] [Poziom 1: {provider_label}] Przeciążenie/błąd {code} dla {model_name}. "
                             f"Throttling Guard: czekam {delay:.1f}s przed ponowieniem...",
                             flush=True,
                         )
@@ -1813,7 +1952,7 @@ def call_gemini_with_fallback(
                         continue
                     if has_next_model:
                         print(
-                            f"[AI Agent] [Poziom 2: {provider_label}] Utrzymujący się błąd {code} dla {model_name}. "
+                            f"[AI Agent] [Poziom 1: {provider_label}] Utrzymujący się błąd {code} dla {model_name}. "
                             f"Throttling Guard: czekam {delay:.1f}s przed przełączeniem na kolejny model...",
                             flush=True,
                         )
@@ -1825,7 +1964,7 @@ def call_gemini_with_fallback(
                 delay = _get_gemini_throttle_delay(model_name)
                 if attempt + 1 < max_attempts_per_model:
                     print(
-                        f"[AI Agent] [Poziom 2: {provider_label}] Błąd sieci/odpowiedzi dla {model_name}: {exc}. "
+                        f"[AI Agent] [Poziom 1: {provider_label}] Błąd sieci/odpowiedzi dla {model_name}: {exc}. "
                         f"Throttling Guard: czekam {delay:.1f}s przed ponowieniem...",
                         flush=True,
                     )
@@ -1833,7 +1972,7 @@ def call_gemini_with_fallback(
                     continue
                 if has_next_model:
                     print(
-                        f"[AI Agent] [Poziom 2: {provider_label}] Błąd sieci/odpowiedzi dla {model_name}: {exc}. "
+                        f"[AI Agent] [Poziom 1: {provider_label}] Błąd sieci/odpowiedzi dla {model_name}: {exc}. "
                         f"Throttling Guard: czekam {delay:.1f}s przed przełączeniem na kolejny model...",
                         flush=True,
                     )
@@ -1849,53 +1988,67 @@ def call_gemini_with_fallback(
 def call_ai_with_fallback(
     prompt: str,
     *,
-    groq_api_key: str = "",
     gemini_api_key: str = "",
+    groq_api_key: str = "",
     groq_prompt: Optional[str] = None,
     gemini_models: Optional[Sequence[str]] = None,
     exhausted_models: Optional[set[str]] = None,
 ) -> dict[str, Any]:
-    """Run 2-tier free Multi-Provider AI router: Groq Cloud -> Gemini Developer API."""
-    groq_key = groq_api_key.strip()
+    """Run 2-tier free Multi-Provider AI router: Gemini Developer API (Poziom 1) -> Groq Cloud (Poziom 2)."""
     gemini_key = gemini_api_key.strip()
+    groq_key = groq_api_key.strip()
 
-    if not groq_key and not gemini_key:
+    if not gemini_key and not groq_key:
         raise RuntimeError(
-            "Brak skonfigurowanych kluczy API (GROQ_API_KEY ani GEMINI_API_KEY)."
+            "Brak skonfigurowanych kluczy API (GEMINI_API_KEY ani GROQ_API_KEY)."
         )
 
     errors_by_tier: list[str] = []
 
+    # Poziom 1: Google Gemini Developer API (główny priorytet)
+    if gemini_key:
+        try:
+            return call_gemini_with_fallback(
+                gemini_key,
+                prompt,
+                gemini_models=gemini_models,
+                exhausted_models=exhausted_models,
+            )
+        except Exception as exc:
+            errors_by_tier.append(f"Google Gemini: {exc}")
+            print(
+                f"[AI Agent] Poziom 1 (Google Gemini Developer API) zawiódł ({exc}). Przechodzę do Poziomu 2 (Groq Cloud)...",
+                flush=True,
+            )
+    else:
+        print(
+            "[AI Agent] Brak GEMINI_API_KEY — pomijam Poziom 1 i przechodzę do Poziomu 2 (Groq Cloud)...",
+            flush=True,
+        )
+
+    # Poziom 2: Groq Cloud (szybki fallback)
     if groq_key:
         effective_groq_prompt = (
             groq_prompt
             if groq_prompt is not None
-            else _truncate_prompt_article_text(prompt, GROQ_PROMPT_TEXT_CHARS)
+            else prompt
         )
         try:
             return call_groq_with_fallback(groq_key, effective_groq_prompt)
         except Exception as exc:
             errors_by_tier.append(f"Groq Cloud: {exc}")
             print(
-                f"[AI Agent] Poziom 1 (Groq Cloud) zawiódł ({exc}). Przechodzę do Poziomu 2 (Google Gemini Developer API)...",
+                f"[AI Agent] Poziom 2 (Groq Cloud) zawiódł ({exc}).",
                 flush=True,
             )
     else:
         print(
-            "[AI Agent] Brak GROQ_API_KEY — pomijam Poziom 1 i przechodzę do Poziomu 2 (Google Gemini Developer API)...",
+            "[AI Agent] Brak GROQ_API_KEY — Poziom 2 (Groq Cloud) niedostępny.",
             flush=True,
         )
 
-    if gemini_key:
-        return call_gemini_with_fallback(
-            gemini_key,
-            prompt,
-            gemini_models=gemini_models,
-            exhausted_models=exhausted_models,
-        )
-
     raise RuntimeError(
-        "Poziom 1 (Groq Cloud) zawiódł, a GEMINI_API_KEY nie jest ustawiony. "
+        "Poziom 1 (Google Gemini) zawiódł, a Poziom 2 (Groq Cloud) nie powiódł się lub nie jest skonfigurowany. "
         + " | ".join(errors_by_tier)
     )
 
@@ -2245,11 +2398,11 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
         print(f"[ERROR] {exc}", file=sys.stderr)
         return 1
 
-    groq_api_key = os.environ.get("GROQ_API_KEY", "").strip()
     gemini_api_key = os.environ.get("GEMINI_API_KEY", "").strip()
-    if not groq_api_key and not gemini_api_key:
+    groq_api_key = os.environ.get("GROQ_API_KEY", "").strip()
+    if not gemini_api_key and not groq_api_key:
         print(
-            "[ERROR] Brak zmiennych środowiskowych GROQ_API_KEY oraz GEMINI_API_KEY.",
+            "[ERROR] Brak zmiennych środowiskowych GEMINI_API_KEY oraz GROQ_API_KEY.",
             file=sys.stderr,
         )
         return 1
@@ -2257,11 +2410,11 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     try:
         extracted = collect_page_data(url)
         full_prompt = build_prompt(extracted, max_text_chars=FULL_PROMPT_TEXT_CHARS)
-        groq_prompt = build_prompt(extracted, max_text_chars=GROQ_PROMPT_TEXT_CHARS)
+        groq_prompt = build_groq_prompt(extracted)
         raw_recipe = call_ai_with_fallback(
             full_prompt,
-            groq_api_key=groq_api_key,
             gemini_api_key=gemini_api_key,
+            groq_api_key=groq_api_key,
             groq_prompt=groq_prompt,
         )
         recipe = finalize_recipe(raw_recipe, extracted, RECIPES_DIR)
