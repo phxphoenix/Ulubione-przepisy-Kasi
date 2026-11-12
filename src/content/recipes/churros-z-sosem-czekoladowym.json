@@ -1,0 +1,175 @@
+{
+  "id": "churros-z-sosem-czekoladowym",
+  "slug": "churros-z-sosem-czekoladowym",
+  "title": "Churros z sosem czekoladowym",
+  "summary": "Chrupiące z zewnątrz i miękkie w środku hiszpańskie churros z ciasta parzonego, podawane z gęstym sosem czekoladowym.",
+  "category": "Desery i wypieki",
+  "tags": [
+    "churros",
+    "kuchnia hiszpańska",
+    "desery",
+    "tłusty czwartek",
+    "słodycze"
+  ],
+  "prepTimeMinutes": 40,
+  "cookTimeMinutes": 20,
+  "totalTimeMinutes": 60,
+  "servings": 30.0,
+  "difficulty": "Średni",
+  "images": [
+    {
+      "url": "https://www.kwestiasmaku.com/sites/v123.kwestiasmaku.com/files/churros.jpg",
+      "caption": "Domowe churros z sosem czekoladowym",
+      "isMain": true
+    },
+    {
+      "url": "https://www.kwestiasmaku.com/sites/v123.kwestiasmaku.com/files/churros_01.jpg",
+      "caption": "Churros",
+      "isMain": false
+    },
+    {
+      "url": "https://www.kwestiasmaku.com/sites/v123.kwestiasmaku.com/files/churros_04.jpg",
+      "caption": "Churros",
+      "isMain": false
+    },
+    {
+      "url": "https://www.kwestiasmaku.com/sites/v123.kwestiasmaku.com/files/churros_02_0.jpg",
+      "caption": "Churros",
+      "isMain": false
+    },
+    {
+      "url": "https://www.kwestiasmaku.com/sites/v123.kwestiasmaku.com/files/churros_03_0.jpg",
+      "caption": "Churros",
+      "isMain": false
+    }
+  ],
+  "videos": [],
+  "ingredientGroups": [
+    {
+      "groupName": "Ciasto",
+      "items": [
+        {
+          "name": "woda",
+          "amount": 1.0,
+          "unit": "szklanka",
+          "notes": "250 ml"
+        },
+        {
+          "name": "masło",
+          "amount": 100.0,
+          "unit": "g"
+        },
+        {
+          "name": "cukier wanilinowy",
+          "amount": 1.0,
+          "unit": "łyżka"
+        },
+        {
+          "name": "cukier",
+          "amount": 2.0,
+          "unit": "łyżki"
+        },
+        {
+          "name": "sól",
+          "notes": "szczypta"
+        },
+        {
+          "name": "mąka pszenna",
+          "amount": 1.0,
+          "unit": "szklanka"
+        },
+        {
+          "name": "jajka",
+          "amount": 3.0,
+          "unit": "szt."
+        }
+      ]
+    },
+    {
+      "groupName": "Do smażenia i posypania",
+      "items": [
+        {
+          "name": "olej roślinny",
+          "amount": 1.0,
+          "unit": "l"
+        },
+        {
+          "name": "cukier puder z cynamonem",
+          "notes": "do posypania"
+        }
+      ]
+    },
+    {
+      "groupName": "Sos czekoladowy",
+      "items": [
+        {
+          "name": "śmietanka 30% lub 18%",
+          "amount": 200.0,
+          "unit": "ml"
+        },
+        {
+          "name": "czekolada deserowa",
+          "amount": 100.0,
+          "unit": "g"
+        }
+      ]
+    }
+  ],
+  "steps": [
+    {
+      "stepNumber": 1,
+      "title": "Przygotowanie bazy ciasta",
+      "instruction": "Wodę zagotować w garnku z masłem, cukrem wanilinowym, cukrem i szczyptą soli.",
+      "tip": "Upewnij się, że masło całkowicie się rozpuściło przed dodaniem mąki.",
+      "imageUrl": "https://www.kwestiasmaku.com/sites/v123.kwestiasmaku.com/files/churros_01.jpg"
+    },
+    {
+      "stepNumber": 2,
+      "title": "Parzenie mąki",
+      "instruction": "Dodać mąkę i mieszać oraz ucierać drewnianą łyżką przez około 2 minuty, aż powstanie gładka, sprężysta masa, która swobodnie odchodzi od brzegów garnka.",
+      "tip": "Parzenie mąki jest kluczowym elementem ciasta parzonego."
+    },
+    {
+      "stepNumber": 3,
+      "title": "Studzenie ciasta",
+      "instruction": "Odstawić garnek z ognia i postawić na desce. Pozostawić do przestudzenia na około 30 minut.",
+      "tip": "Ciasto nie może być gorące po dodaniu jajek, aby się nie ścięły."
+    },
+    {
+      "stepNumber": 4,
+      "title": "Dodawanie jajek",
+      "instruction": "Wbić jedno jajko i mieszać drewnianą łyżką do całkowitego połączenia składników w jednolite ciasto. Powtórzyć tę czynność z dwoma kolejnymi jajkami, za każdym razem dokładnie mieszając.",
+      "tip": "Możesz użyć miksera na niskich obrotach, aby ułatwić wrobienie jajek.",
+      "imageUrl": "https://www.kwestiasmaku.com/sites/v123.kwestiasmaku.com/files/churros_02_0.jpg"
+    },
+    {
+      "stepNumber": 5,
+      "title": "Formowanie i smażenie churros",
+      "instruction": "Przełożyć ciasto do rękawa cukierniczego zakończonego tylką w kształcie gwiazdki. Rozgrzać olej w garnku do temperatury 180°C. Wyciskać bezpośrednio do gorącego tłuszczu kawałki ciasta o długości około 8-10 cm, odcinając końce nożyczkami lub nożem.",
+      "tip": "Do formowania użyj solidnego rękawa cukierniczego, ponieważ ciasto jest gęste.",
+      "imageUrl": "https://www.kwestiasmaku.com/sites/v123.kwestiasmaku.com/files/churros_03_0.jpg"
+    },
+    {
+      "stepNumber": 6,
+      "title": "Smażenie na złoty kolor",
+      "instruction": "Smażyć partiami po kilka sztuk przez około 2 minuty z każdej strony na złoty kolor. Następnie wyławiać łyżką cedzakową i odkładać na talerz wyłożony ręcznikami papierowymi.",
+      "tip": "Kontroluj temperaturę oleju, aby churros nie spiekły się zbyt szybko z zewnątrz, pozostając surowe w środku."
+    },
+    {
+      "stepNumber": 7,
+      "title": "Przygotowanie sosu czekoladowego",
+      "instruction": "Śmietankę zagotować, a następnie odstawić z ognia. Dodać połamaną na kosteczki czekoladę i mieszać energicznie, aż całkowicie się rozpuści i powstanie gładki sos.",
+      "tip": "Podawać churros posypane cukrem pudrem z cynamonem, w akompaniamencie przygotowanego ciepłego sosu czekoladowego.",
+      "imageUrl": "https://www.kwestiasmaku.com/sites/v123.kwestiasmaku.com/files/churros_04.jpg"
+    }
+  ],
+  "chefTips": [
+    "Najsmaczniejsze są jeszcze ciepłe, zaraz po usmażeniu.",
+    "Do ciasta można dodać odrobinę aromatu waniliowego.",
+    "Dokładne trzymanie się proporcji jest kluczem do idealnej konsystencji ciasta parzonego."
+  ],
+  "sourceUrl": "https://www.kwestiasmaku.com/przepis/churros",
+  "sourceDomain": "kwestiasmaku.com",
+  "originalLanguage": "pl",
+  "createdAt": "2026-11-12T20:06:56.455Z"
+}
