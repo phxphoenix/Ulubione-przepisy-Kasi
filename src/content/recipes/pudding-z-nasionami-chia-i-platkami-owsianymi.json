@@ -1,0 +1,115 @@
+{
+  "id": "pudding-z-nasionami-chia-i-platkami-owsianymi",
+  "slug": "pudding-z-nasionami-chia-i-platkami-owsianymi",
+  "title": "Pudding z nasionami chia i płatkami owsianymi",
+  "summary": "Kremowy, pożywny pudding na bazie nasion chia, płatków owsianych i jogurtu greckiego. Idealne śniadanie do przygotowania z wyprzedzeniem w słoiczku.",
+  "category": "Śniadania",
+  "tags": [
+    "pudding chia",
+    "nocna owsianka",
+    "zdrowe śniadanie",
+    "meal prep",
+    "szybkie śniadanie"
+  ],
+  "prepTimeMinutes": 10,
+  "cookTimeMinutes": 0,
+  "totalTimeMinutes": 10,
+  "servings": 1.0,
+  "difficulty": "Łatwy",
+  "images": [
+    {
+      "url": "https://simplehomeedit.com/wp-content/uploads/2021/06/Chia-and-Oat-Pudding-3.webp",
+      "caption": "Pudding chia z płatkami owsianymi, borówkami i płatkami kokosa",
+      "isMain": true
+    }
+  ],
+  "videos": [],
+  "ingredientGroups": [
+    {
+      "groupName": "Baza puddingu",
+      "items": [
+        {
+          "name": "błyskawiczne płatki owsiane",
+          "amount": 3.0,
+          "unit": "łyżki",
+          "notes": "można użyć zwykłych płatków górskich"
+        },
+        {
+          "name": "nasiona chia",
+          "amount": 1.0,
+          "unit": "łyżka"
+        },
+        {
+          "name": "mleko",
+          "amount": 80.0,
+          "unit": "ml",
+          "notes": "krowie lub napój roślinny"
+        },
+        {
+          "name": "gęsty jogurt grecki",
+          "amount": 80.0,
+          "unit": "g",
+          "notes": "naturalny lub kokosowy w wersji wegańskiej"
+        },
+        {
+          "name": "syrop klonowy",
+          "amount": 1.0,
+          "unit": "łyżeczka",
+          "notes": "lub miód według upodobań"
+        }
+      ]
+    },
+    {
+      "groupName": "Do podania",
+      "items": [
+        {
+          "name": "świeże borówki",
+          "amount": 1.0,
+          "unit": "łyżka",
+          "notes": "lub maliny, truskawki czy mango"
+        },
+        {
+          "name": "orzechy włoskie",
+          "amount": 1.0,
+          "unit": "łyżka",
+          "notes": "posiekane (lub migdały, orzechy nerkowca)"
+        },
+        {
+          "name": "płatki lub wiórki kokosowe",
+          "amount": 1.0,
+          "unit": "łyżeczka",
+          "notes": "opcjonalnie do posypania"
+        }
+      ]
+    }
+  ],
+  "steps": [
+    {
+      "stepNumber": 1,
+      "title": "Wymieszanie bazy",
+      "instruction": "W słoiczku lub małej miseczce umieść płatki owsiane, nasiona chia, mleko, jogurt grecki oraz syrop klonowy. Całość dokładnie wymieszaj łyżką, dbając o to, by nasiona chia nie zlepiły się na dnie.",
+      "tip": "Dokładne wymieszanie po 2–3 minutach od zalania zapobiegnie powstawaniu grudek z nasion chia."
+    },
+    {
+      "stepNumber": 2,
+      "title": "Schłodzenie i tężenie",
+      "instruction": "Zamknij słoiczek pokrywką lub przykryj naczynie folią i wstaw do lodówki na co najmniej 2–3 godziny, a najlepiej na całą noc, aby płatki i nasiona napęczniały.",
+      "tip": "Pudding po kilku godzinach zyska gęstą, aksamitną konsystencję."
+    },
+    {
+      "stepNumber": 3,
+      "title": "Udekorowanie i podanie",
+      "instruction": "Przed podaniem wymieszaj pudding, a na wierzchu ułóż świeże borówki, posiekane orzechy włoskie oraz płatki kokosa.",
+      "imageUrl": "https://simplehomeedit.com/wp-content/uploads/2021/06/Chia-and-Oat-Pudding-3.webp"
+    }
+  ],
+  "chefTips": [
+    "Pudding można przygotować w większej liczbie porcji naraz – w szczelnie zamkniętych słoiczkach zachowuje świeżość w lodówce do 3 dni.",
+    "W wersji wegańskiej i bezmlecznej użyj napoju roślinnego (np. migdałowego lub owsianego) oraz jogurtu kokosowego.",
+    "Dla urozmaicenia smaku do bazy możesz dodać szczyptę cynamonu, kardamonu lub odrobinę ekstraktu z wanilii."
+  ],
+  "sourceUrl": "https://simplehomeedit.com/recipe/chia-and-oat-puddings/",
+  "sourceDomain": "simplehomeedit.com",
+  "originalLanguage": "en",
+  "createdAt": "2026-11-12T08:17:31.945Z"
+}
