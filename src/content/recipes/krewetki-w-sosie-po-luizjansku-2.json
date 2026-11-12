@@ -1,0 +1,173 @@
+{
+  "id": "krewetki-w-sosie-po-luizjansku-2",
+  "slug": "krewetki-w-sosie-po-luizjansku-2",
+  "title": "Krewetki w sosie po luizjańsku",
+  "summary": "Wyśmienite i szybkie krewetki w aromatycznym, maślano-ziołowym sosie z nutą sosu Worcestershire i cytryny. Idealne do podania z chrupiącą bagietką.",
+  "category": "Dania główne",
+  "tags": [
+    "krewetki",
+    "owoce morza",
+    "kuchnia amerykańska",
+    "szybki obiad",
+    "kolacja"
+  ],
+  "prepTimeMinutes": 10,
+  "cookTimeMinutes": 10,
+  "totalTimeMinutes": 20,
+  "servings": 3.0,
+  "difficulty": "Łatwy",
+  "images": [
+    {
+      "url": "https://www.kwestiasmaku.com/sites/v123.kwestiasmaku.com/files/krewetki_w_sosie_po_luizjansku_01.jpg",
+      "caption": "Krewetki w sosie po luizjańsku podane z bagietką",
+      "isMain": true
+    },
+    {
+      "url": "https://www.kwestiasmaku.com/sites/v123.kwestiasmaku.com/files/krewetki-po-luizjansku-00.jpg",
+      "caption": "Krewetki po luizjańsku na patelni",
+      "isMain": false
+    }
+  ],
+  "videos": [],
+  "ingredientGroups": [
+    {
+      "groupName": "Składniki główne",
+      "items": [
+        {
+          "name": "Krewetki",
+          "amount": 375.0,
+          "unit": "g",
+          "notes": "rozmrożone i oczyszczone"
+        },
+        {
+          "name": "Olej roślinny",
+          "amount": 1.0,
+          "unit": "łyżka"
+        },
+        {
+          "name": "Cebula",
+          "amount": 1.0,
+          "unit": "szt.",
+          "notes": "mała, pokrojona w drobną kostkę"
+        },
+        {
+          "name": "Czosnek",
+          "amount": 2.0,
+          "unit": "ząbki",
+          "notes": "przeciśnięte przez praskę"
+        },
+        {
+          "name": "Masło",
+          "amount": 2.0,
+          "unit": "łyżki",
+          "notes": "podzielone na 2 porcje"
+        },
+        {
+          "name": "Słodki sos chili",
+          "amount": 2.0,
+          "unit": "łyżki"
+        },
+        {
+          "name": "Sos Worcestershire",
+          "amount": 2.0,
+          "unit": "łyżki"
+        },
+        {
+          "name": "Bulion",
+          "amount": 60.0,
+          "unit": "ml",
+          "notes": "lub 0.25 szklanki"
+        },
+        {
+          "name": "Sok z cytryny",
+          "amount": 2.0,
+          "unit": "łyżki"
+        },
+        {
+          "name": "Cukier",
+          "amount": 0.5,
+          "unit": "łyżeczki"
+        }
+      ]
+    },
+    {
+      "groupName": "Przyprawy",
+      "items": [
+        {
+          "name": "Suszone oregano",
+          "amount": 1.0,
+          "unit": "łyżeczka"
+        },
+        {
+          "name": "Suszony tymianek",
+          "amount": 1.0,
+          "unit": "łyżeczka"
+        },
+        {
+          "name": "Słodka papryka w proszku",
+          "amount": 2.0,
+          "unit": "łyżeczki"
+        },
+        {
+          "name": "Sól",
+          "notes": "do smaku"
+        },
+        {
+          "name": "Pieprz",
+          "notes": "do smaku"
+        }
+      ]
+    },
+    {
+      "groupName": "Do podania",
+      "items": [
+        {
+          "name": "Bagietka",
+          "notes": "chrupiąca"
+        },
+        {
+          "name": "Natka pietruszki",
+          "notes": "drobno posiekana"
+        }
+      ]
+    }
+  ],
+  "steps": [
+    {
+      "stepNumber": 1,
+      "title": "Przygotowanie krewetek",
+      "instruction": "Jeśli używasz mrożonych krewetek, dokładnie je rozmroź i osusz na papierowym ręczniku. W razie potrzeby oczyść je z pancerzyków i jelit."
+    },
+    {
+      "stepNumber": 2,
+      "title": "Podsmażanie warzyw",
+      "instruction": "Na dużej patelni rozgrzej łyżkę oleju roślinnego. Wrzuć drobno pokrojoną cebulę i smaż, aż się zeszkli. Dodać przeciśnięty przez praskę czosnek i podsmażaj jeszcze przez około 30 sekund.",
+      "tip": "Uważaj, aby nie przypalić czosnku, inaczej sos stanie się gorzki."
+    },
+    {
+      "stepNumber": 3,
+      "title": "Przygotowanie bazy sosu",
+      "instruction": "Dodaj na patelnię 1 łyżkę masła, słodki sos chili, sos Worcestershire, bulion, sok z cytryny i cukier. Całość zagotuj, a następnie wsyp oregano, tymianek oraz paprykę w proszku. Gotuj sos przez 2 minuty, regularnie mieszając."
+    },
+    {
+      "stepNumber": 4,
+      "title": "Dusznie krewetek",
+      "instruction": "Włóż krewetki do gotującego się sosu. Gotuj przez 1 minutę, po czym dopraw delikatnie solą i pieprzem, przewróć krewetki na drugą stronę i gotuj kolejną minutę.",
+      "tip": "Przed dodaniem soli skosztuj sosu – bulion i sos Worcestershire są już naturalnie słone."
+    },
+    {
+      "stepNumber": 5,
+      "title": "Wykończenie dania",
+      "instruction": "Zdejmij patelnię z ognia lub zmniejsz płomień, dodaj drugą łyżkę masła i mieszaj, aż całkowicie się roztopi i zagęści sos. Posyp potrawę posiekaną natką pietruszki."
+    }
+  ],
+  "chefTips": [
+    "Sos Worcestershire jest kluczowym składnikiem nadającym głęboki, lekko wytrawny smak sosu – nie pomijaj go.",
+    "Krewetki gotuj bardzo krótko (łącznie około 2 minut), aby pozostały soczyste i miękkie.",
+    "Podawaj danie ze świeżą, chrupiącą bagietką, która idealnie nadaje się do wycierania pysznego sosu z talerza."
+  ],
+  "sourceUrl": "https://www.kwestiasmaku.com/przepis/krewetki-w-sosie-po-luizjansku",
+  "sourceDomain": "kwestiasmaku.com",
+  "originalLanguage": "pl",
+  "createdAt": "2026-11-12T18:33:22.680Z"
+}
