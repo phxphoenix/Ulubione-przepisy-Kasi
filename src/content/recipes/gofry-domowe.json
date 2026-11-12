@@ -1,0 +1,120 @@
+{
+  "id": "gofry-domowe",
+  "slug": "gofry-domowe",
+  "title": "Gofry domowe",
+  "summary": "Przepyszne, chrupiące na zewnątrz i miękkie w środku domowe gofry. Idealne do podania z ulubionymi dodatkami, owocami i bitą śmietaną.",
+  "category": "Desery i wypieki",
+  "tags": [
+    "gofry",
+    "deser",
+    "słodkości",
+    "podwieczorek",
+    "dla dzieci"
+  ],
+  "prepTimeMinutes": 10,
+  "cookTimeMinutes": 15,
+  "totalTimeMinutes": 25,
+  "servings": 8.0,
+  "difficulty": "Łatwy",
+  "images": [
+    {
+      "url": "https://www.kwestiasmaku.com/sites/v123.kwestiasmaku.com/files/gofry_domowe_01.jpg",
+      "caption": "Gofry domowe",
+      "isMain": true
+    },
+    {
+      "url": "https://www.kwestiasmaku.com/sites/v123.kwestiasmaku.com/files/gofry_domowe_00.jpg",
+      "caption": "Domowe gofry w zbliżeniu",
+      "isMain": false
+    },
+    {
+      "url": "https://www.kwestiasmaku.com/sites/v123.kwestiasmaku.com/files/gofry_domowe__0.jpg",
+      "caption": "Gofry podane z dodatkami",
+      "isMain": false
+    }
+  ],
+  "videos": [],
+  "ingredientGroups": [
+    {
+      "groupName": "Ciasto na gofry",
+      "items": [
+        {
+          "name": "mąka pszenna",
+          "amount": 240.0,
+          "unit": "g",
+          "notes": "ok. 1.5 szklanki"
+        },
+        {
+          "name": "proszek do pieczenia",
+          "amount": 1.5,
+          "unit": "łyżeczki"
+        },
+        {
+          "name": "sól",
+          "unit": "szczypta"
+        },
+        {
+          "name": "cukier puder lub kryształ",
+          "amount": 2.0,
+          "unit": "łyżeczki"
+        },
+        {
+          "name": "cukier wanilinowy",
+          "amount": 1.0,
+          "unit": "łyżka"
+        },
+        {
+          "name": "mleko",
+          "amount": 350.0,
+          "unit": "ml",
+          "notes": "ok. 1 i 1/3 szklanki"
+        },
+        {
+          "name": "jaja",
+          "amount": 2.0,
+          "unit": "szt."
+        },
+        {
+          "name": "olej roślinny lub roztopione masło",
+          "amount": 125.0,
+          "unit": "ml",
+          "notes": "ok. 0.5 szklanki"
+        }
+      ]
+    }
+  ],
+  "steps": [
+    {
+      "stepNumber": 1,
+      "title": "Wymieszanie suchych składników",
+      "instruction": "Mąkę pszenną wsypać do miski, dodać proszek do pieczenia, szczyptę soli, cukier oraz cukier wanilinowy. Całość dokładnie wymieszać."
+    },
+    {
+      "stepNumber": 2,
+      "title": "Przygotowanie ciasta",
+      "instruction": "Do suchej mieszanki dodać mleko, jajka oraz olej roślinny lub roztopione masło. Zmiksować mikserem lub wymieszać rózgą kuchenną na jednolitą, gładką masę.",
+      "tip": "Ciasto można odstawić na około 15 minut, aby odpoczęło, jednak nie jest to konieczne."
+    },
+    {
+      "stepNumber": 3,
+      "title": "Pieczenie gofrów",
+      "instruction": "Dobrze rozgrzać gofrownicę. Nakładać porcje ciasta chochlą, a następnie wypukłą stroną chochli równomiernie rozprowadzić ciasto po całej powierzchni płyty grzewczej. Piec na złoty kolor przez około 3 do 3,5 minuty lub zgodnie z instrukcją obsługi gofrownicy.",
+      "tip": "Używaj dobrze rozgrzanej gofrownice o dużej mocy, aby gofry były odpowiednio chrupiące."
+    },
+    {
+      "stepNumber": 4,
+      "title": "Studzenie i podawanie",
+      "instruction": "Upieczone gofry zdejmować z gofrownicy i układać pojedynczo na metalowej kratce, aby zachowały chrupkość. Przed podaniem posypać cukrem pudrem lub udekorować ulubionymi dodatkami.",
+      "tip": "Nie układaj gorących gofrów jeden na drugim, ponieważ zmiękną od pary wodnej."
+    }
+  ],
+  "chefTips": [
+    "Kluczem do idealnie chrupiących gofrów jest dobra gofrownica oraz dokładne rozgrzanie urządzeń przed wylaniem ciasta.",
+    "Gotowe gofry zawsze studź na kratce kuchennej – dzięki temu od spodu nie zbierze się wilgoć.",
+    "Gofry świetnie smakują z dżemem, świeżymi owocami, syropem klonowym lub bitą śmietaną."
+  ],
+  "sourceUrl": "https://www.kwestiasmaku.com/dania_dla_dwojga/gofry/gofry/przepis.html",
+  "sourceDomain": "kwestiasmaku.com",
+  "originalLanguage": "pl",
+  "createdAt": "2026-11-12T19:50:30.464Z"
+}
