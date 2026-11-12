@@ -1,0 +1,194 @@
+{
+  "id": "lasagne-bolognese",
+  "slug": "lasagne-bolognese",
+  "title": "Lasagne bolognese",
+  "summary": "Niezawodny przepis na najlepszą klasyczną lasagne przekładaną bogatym sosem bolońskim i kremowym beszamelem.",
+  "category": "Dania główne",
+  "tags": [
+    "lasagne",
+    "kuchnia włoska",
+    "makaron",
+    "obiad na niedzielę",
+    "mięso mielone"
+  ],
+  "prepTimeMinutes": 30,
+  "cookTimeMinutes": 150,
+  "totalTimeMinutes": 180,
+  "servings": 7.0,
+  "difficulty": "Średni",
+  "images": [
+    {
+      "url": "https://www.kwestiasmaku.com/sites/v123.kwestiasmaku.com/files/lasagne_bolognese_00_0.jpg",
+      "caption": "Lasagne bolognese w pełnej okazałości",
+      "isMain": true
+    },
+    {
+      "url": "https://www.kwestiasmaku.com/sites/v123.kwestiasmaku.com/files/lasagne_bolognese_01.jpg",
+      "caption": "Przygotowanie składników na lasagne bolognese",
+      "isMain": false
+    },
+    {
+      "url": "https://www.kwestiasmaku.com/sites/v123.kwestiasmaku.com/files/lasagne_bolognese_02_0.jpg",
+      "caption": "Warstwowa budowa lasagne przed pieczeniem",
+      "isMain": false
+    },
+    {
+      "url": "https://www.kwestiasmaku.com/sites/v123.kwestiasmaku.com/files/lasagne_bolognese_2.jpg",
+      "caption": "Gotowe danie na stole",
+      "isMain": false
+    }
+  ],
+  "videos": [],
+  "ingredientGroups": [
+    {
+      "groupName": "Baza",
+      "items": [
+        {
+          "name": "płaty lasagne",
+          "amount": 15.0,
+          "unit": "szt.",
+          "notes": "gotowych lub domowych"
+        },
+        {
+          "name": "tarty parmezan",
+          "amount": 150.0,
+          "unit": "g"
+        }
+      ]
+    },
+    {
+      "groupName": "Sos boloński",
+      "items": [
+        {
+          "name": "oliwa",
+          "amount": 3.0,
+          "unit": "łyżki"
+        },
+        {
+          "name": "cebula",
+          "amount": 1.0,
+          "unit": "szt."
+        },
+        {
+          "name": "seler naciowy",
+          "amount": 2.0,
+          "unit": "łodygi"
+        },
+        {
+          "name": "marchewka",
+          "amount": 1.0,
+          "unit": "szt."
+        },
+        {
+          "name": "boczek wędzony lub gotowany",
+          "amount": 150.0,
+          "unit": "g"
+        },
+        {
+          "name": "mielone mięso wieprzowo-wołowe",
+          "amount": 500.0,
+          "unit": "g"
+        },
+        {
+          "name": "białe lub czerwone wino",
+          "amount": 1.0,
+          "unit": "szklanka"
+        },
+        {
+          "name": "koncentrat pomidorowy",
+          "amount": 4.0,
+          "unit": "łyżki"
+        },
+        {
+          "name": "gorący bulion",
+          "amount": 1.0,
+          "unit": "szklanka"
+        },
+        {
+          "name": "passata pomidorowa",
+          "amount": 400.0,
+          "unit": "g"
+        },
+        {
+          "name": "sól i pieprz",
+          "notes": "do smaku"
+        }
+      ]
+    },
+    {
+      "groupName": "Sos beszamelowy",
+      "items": [
+        {
+          "name": "masło",
+          "amount": 4.0,
+          "unit": "łyżki"
+        },
+        {
+          "name": "mąka pszenna",
+          "amount": 3.0,
+          "unit": "łyżki"
+        },
+        {
+          "name": "mleko",
+          "amount": 650.0,
+          "unit": "ml"
+        },
+        {
+          "name": "gałka muszkatołowa",
+          "notes": "szczypta"
+        },
+        {
+          "name": "sól",
+          "notes": "do smaku"
+        }
+      ]
+    }
+  ],
+  "steps": [
+    {
+      "stepNumber": 1,
+      "title": "Przygotowanie warzyw i boczku",
+      "instruction": "Na oliwie, w dużym garnku, zeszklić drobno posiekaną cebulę, dodać posiekany w drobną kosteczkę seler naciowy oraz startą marchewkę. Obsmażyć, następnie przesunąć na bok i w wolne miejsce włożyć pokrojony w drobną kosteczkę boczek. Zrumienić i wymieszać z warzywami.",
+      "tip": "Warzywa można również szybko rozdrobnić w malakserze.",
+      "imageUrl": "https://www.kwestiasmaku.com/sites/v123.kwestiasmaku.com/files/lasagne_bolognese_01.jpg"
+    },
+    {
+      "stepNumber": 2,
+      "title": "Smażenie mięsa",
+      "instruction": "Przesunąć wszystko na bok garnka i partiami wkładać mięso: włożyć 1/3 część mięsa i obsmażyć mieszając co chwilę, aż zmieni kolor z czerwonego na brązowy. Następnie wymieszać z warzywami i boczkiem, przesunąć na bok i powtórzyć z resztą mięsa."
+    },
+    {
+      "stepNumber": 3,
+      "title": "Gotowanie sosu bolońskiego",
+      "instruction": "Wlać wino i gotować na średnim ogniu przez 3 minuty. Dodać gorący bulion wymieszany z koncentratem pomidorowym, zagotować, a następnie dodać passatę pomidorową. Doprawić solą i pieprzem. Przykryć i gotować na małym ogniu przez 2 godziny, od czasu do czasu zamieszać.",
+      "tip": "Sos będzie jeszcze lepszy, jeśli pozwolimy mu gotować się dłużej lub przygotujemy go nawet 2 dni wcześniej."
+    },
+    {
+      "stepNumber": 4,
+      "title": "Przygotowanie sosu beszamelowego",
+      "instruction": "W średnim garnku dobrze rozgrzać masło, dodać mąkę i smażyć przez około 2 minuty ciągle mieszając. Stopniowo wlewać mleko, cały czas energicznie mieszając, aż sos będzie gładki. Gotować na wolnym ogniu przez kilka minut, odstawić z ognia i doprawić solą oraz gałką muszkatołową."
+    },
+    {
+      "stepNumber": 5,
+      "title": "Składanie lasagne",
+      "instruction": "Piekarnik nagrzać do 175°C (grzanie góra-dół bez termoobiegu). Żaroodporną formę o wymiarach około 19x27 cm wysmarować masłem, wlać i rozprowadzić ok. 100 ml sosu beszamelowego, ułożyć pierwszą warstwę płatów lasagne. Na płatach rozprowadzić warstwę sosu bolońskiego, polać sosem beszamelowym i posypać parmezanem. Powtórzyć te warstwy jeszcze 4-krotnie.",
+      "tip": "Płaty makaronu mogą nieznacznie na siebie nachodzić.",
+      "imageUrl": "https://www.kwestiasmaku.com/sites/v123.kwestiasmaku.com/files/lasagne_bolognese_02_0.jpg"
+    },
+    {
+      "stepNumber": 6,
+      "title": "Pieczenie i podanie",
+      "instruction": "Tak złożoną lasagne włożyć do piekarnika i piec przez 45 minut (w połowie czasu pieczenia przykryć formę folią aluminiową). Po wyjęciu z piekarnika odczekać 5 minut przed porcjowaniem.",
+      "tip": "Odczekanie kilku minut po upieczeniu ułatwi ładne krojenie na porcje.",
+      "imageUrl": "https://www.kwestiasmaku.com/sites/v123.kwestiasmaku.com/files/lasagne_bolognese_2.jpg"
+    }
+  ],
+  "chefTips": [
+    "Sos boloński zyskuje na smaku, jeśli przygotujesz go dzień lub dwa wcześniej i pozwolimy mu 'przegryźć się' w lodówce.",
+    "Do przygotowania możesz użyć domowego makaronu lasagne, co podniesie walory smakowe potrawy."
+  ],
+  "sourceUrl": "https://www.kwestiasmaku.com/pasta/lasagne_bolognese/przepis.html",
+  "sourceDomain": "kwestiasmaku.com",
+  "originalLanguage": "pl",
+  "createdAt": "2026-11-12T08:22:31.765Z"
+}
