@@ -1,0 +1,116 @@
+{
+  "id": "kopytka-dyniowe",
+  "slug": "kopytka-dyniowe",
+  "title": "Kopytka dyniowe",
+  "summary": "Pyszne i mięciutkie kopytka dyniowo‑ziemniaczane, idealne jako dodatek do mięs, gulaszy czy jako wegetariańska alternatywa gnocchi. Po podsmażeniu na maśle są chrupiące z zewnątrz i rozpływają się w ustach.",
+  "category": "Dania główne",
+  "tags": [
+    "kopytka",
+    "dynia",
+    "wegetariańskie",
+    "ziemniaki"
+  ],
+  "prepTimeMinutes": 20,
+  "cookTimeMinutes": 15,
+  "totalTimeMinutes": 35,
+  "servings": 5.0,
+  "difficulty": "Łatwy",
+  "images": [
+    {
+      "url": "https://www.kwestiasmaku.com/sites/v123.kwestiasmaku.com/files/kopytka-dyniowe-00.jpg",
+      "caption": "Kopytka dyniowe – gotowe danie",
+      "isMain": true
+    },
+    {
+      "url": "https://www.kwestiasmaku.com/sites/v123.kwestiasmaku.com/files/kopytka-dyniowe.jpg",
+      "caption": "Kopytka dyniowe na talerzu",
+      "isMain": false
+    },
+    {
+      "url": "https://www.kwestiasmaku.com/sites/v123.kwestiasmaku.com/files/kopytka-dyniowe-01.jpg",
+      "caption": "Kopytka w trakcie gotowania",
+      "isMain": false
+    }
+  ],
+  "videos": [],
+  "ingredientGroups": [
+    {
+      "items": [
+        {
+          "name": "ugotowane ziemniaki",
+          "amount": 400.0,
+          "unit": "g"
+        },
+        {
+          "name": "upieczona dynia (bez skórki)",
+          "amount": 400.0,
+          "unit": "g"
+        },
+        {
+          "name": "sól",
+          "notes": "do smaku (ok. ½ łyżeczki)"
+        },
+        {
+          "name": "jajko",
+          "amount": 1.0,
+          "unit": "szt."
+        },
+        {
+          "name": "mąka pszenna",
+          "amount": 200.0,
+          "unit": "g"
+        },
+        {
+          "name": "mąka pszenna do podsypania"
+        }
+      ]
+    }
+  ],
+  "steps": [
+    {
+      "stepNumber": 1,
+      "title": "Ugotuj ziemniaki",
+      "instruction": "Ugotuj około 500 g ziemniaków w osolonej wodzie, odcedź, odparuj i ostudź. Odważ 400 g ugotowanych ziemniaków.",
+      "tip": "Użyj praski do ziemniaków, aby uzyskać gładką masę."
+    },
+    {
+      "stepNumber": 2,
+      "title": "Upiecz dynię",
+      "instruction": "Upiecz dynię w piekarniku, usuń skórkę i odważ 400 g puree."
+    },
+    {
+      "stepNumber": 3,
+      "title": "Połącz składniki",
+      "instruction": "W dużej misce rozgnieć ziemniaki i dynię przy pomocy praski, aż masa będzie jednolita."
+    },
+    {
+      "stepNumber": 4,
+      "title": "Dodaj jajko i mąkę",
+      "instruction": "Do masy dodaj jajko i sól (ok. ½ łyżeczki), wymieszaj. Następnie wsyp 200 g mąki, ponownie wymieszaj i przełóż ciasto na stolnicę podsypaną mąką."
+    },
+    {
+      "stepNumber": 5,
+      "title": "Uformuj kopytka",
+      "instruction": "Podziel ciasto na 6 równych części, z każdej uformuj wałek o grubości kciuka, obtocz w mące i pokrój na kawałki o szerokości 1,5‑2 cm."
+    },
+    {
+      "stepNumber": 6,
+      "title": "Gotuj kopytka",
+      "instruction": "Wrzuć kopytka do wrzącej, osolonej wody. Gotuj do wypłynięcia na powierzchnię (2‑3 minuty) lub do miękkości, delikatnie mieszając drewnianą łyżką.",
+      "tip": "Uważaj, aby kopytka nie przywarły do dna garnka."
+    },
+    {
+      "stepNumber": 7,
+      "title": "Odcedź i podaj",
+      "instruction": "Wyłóż kopytka łyżką cedzakową na talerze. Podawaj gorące, ewentualnie podsmażone na maśle.",
+      "tip": "Podawaj z roztopionym masłem i świeżymi ziołami."
+    }
+  ],
+  "chefTips": [
+    "Kopytka można przechowywać w lodówce po odparowaniu – wystarczy je podgrzać lub podsmażyć przed podaniem."
+  ],
+  "sourceUrl": "https://www.kwestiasmaku.com/przepis/kopytka-dyniowe",
+  "sourceDomain": "kwestiasmaku.com",
+  "originalLanguage": "pl",
+  "createdAt": "2026-11-12T07:56:05.205Z"
+}
