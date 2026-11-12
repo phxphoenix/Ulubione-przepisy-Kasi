@@ -1,0 +1,116 @@
+{
+  "id": "nalesniki",
+  "slug": "nalesniki",
+  "title": "Naleśniki",
+  "summary": "Najlepszy przepis na miękkie, elastyczne i cienkie naleśniki, które zawsze wychodzą idealne.",
+  "category": "Dania główne",
+  "tags": [
+    "naleśniki",
+    "obiad",
+    "dla dzieci",
+    "kuchnia polska",
+    "szybkie danie"
+  ],
+  "prepTimeMinutes": 15,
+  "cookTimeMinutes": 15,
+  "totalTimeMinutes": 30,
+  "servings": 8.0,
+  "difficulty": "Łatwy",
+  "images": [
+    {
+      "url": "https://www.kwestiasmaku.com/sites/v123.kwestiasmaku.com/files/nalesniki_00_1.jpg",
+      "caption": "Tradycyjne domowe naleśniki",
+      "isMain": true
+    },
+    {
+      "url": "https://www.kwestiasmaku.com/sites/v123.kwestiasmaku.com/files/nalesniki_49.jpg",
+      "caption": "Gotowe naleśniki na talerzu",
+      "isMain": false
+    },
+    {
+      "url": "https://www.kwestiasmaku.com/sites/v123.kwestiasmaku.com/files/nalesniki_01_1.jpg",
+      "caption": "Smażenie naleśników",
+      "isMain": false
+    }
+  ],
+  "videos": [],
+  "ingredientGroups": [
+    {
+      "groupName": "Ciasto naleśnikowe",
+      "items": [
+        {
+          "name": "mąka pszenna",
+          "amount": 1.0,
+          "unit": "szklanka"
+        },
+        {
+          "name": "mleko",
+          "amount": 1.0,
+          "unit": "szklanka"
+        },
+        {
+          "name": "woda",
+          "amount": 0.75,
+          "unit": "szklanka",
+          "notes": "np. gazowana, można zastąpić mlekiem"
+        },
+        {
+          "name": "jajka",
+          "amount": 2.0,
+          "unit": "szt.",
+          "notes": "duże (lub 3 małe)"
+        },
+        {
+          "name": "sól",
+          "unit": "szczypta"
+        },
+        {
+          "name": "olej roślinny",
+          "amount": 3.0,
+          "unit": "łyżki",
+          "notes": "lub roztopione masło"
+        }
+      ]
+    }
+  ],
+  "steps": [
+    {
+      "stepNumber": 1,
+      "title": "Przygotowanie bazy ciasta",
+      "instruction": "Mąkę wsypać do miski, dodać mleko oraz wodę (gazowaną lub zwykłą) i wymieszać rózgą lub krótko zmiksować mikserem na jednolite ciasto bez grudek.",
+      "tip": "Użycie wody gazowanej sprawi, że naleśniki będą jeszcze bardziej puszyste.",
+      "imageUrl": "https://www.kwestiasmaku.com/sites/v123.kwestiasmaku.com/files/nalesniki_01_1.jpg"
+    },
+    {
+      "stepNumber": 2,
+      "title": "Dodanie pozostałych składników",
+      "instruction": "Dodać jajka, sól oraz olej roślinny lub roztopione masło i znów krótko wymieszać rózgą lub zmiksować na gładkie ciasto."
+    },
+    {
+      "stepNumber": 3,
+      "title": "Smażenie pierwszej strony",
+      "instruction": "Rozgrzać patelnię (np. naleśnikową, ale nie jest ona konieczna). Wylać niedużą porcję ciasta na rozgrzaną patelnię za pomocą łyżki wazowej i rozprowadzić je po całej patelni powierzchni przekręcając patelnię.",
+      "tip": "Patelnia powinna być dobrze rozgrzana przed wylaniem pierwszej porcji."
+    },
+    {
+      "stepNumber": 4,
+      "title": "Smażenie drugiej strony",
+      "instruction": "Gdy spód naleśnika będzie już ładnie zrumieniony i dobrze ścięty, przewrócić go na drugą stronę za pomocą łopatki i powtórzyć smażenie na drugiej stronie."
+    },
+    {
+      "stepNumber": 5,
+      "title": "Zakończenie",
+      "instruction": "Usmażyć pozostałe naleśniki.",
+      "imageUrl": "https://www.kwestiasmaku.com/sites/v123.kwestiasmaku.com/files/nalesniki_49.jpg"
+    }
+  ],
+  "chefTips": [
+    "Do naleśników deserowych (na słodko) warto dodać 1 łyżkę cukru wanilinowego lub zwykłego cukru.",
+    "Zamiast wody do ciasta świetnie sprawdzi się mleko (w sumie 1 i 3/4 szklanki mleka, już bez wody).",
+    "Jeśli używasz małych lub średnich jaj, dodaj ich 3 sztuki."
+  ],
+  "sourceUrl": "https://www.kwestiasmaku.com/kuchnia_polska/nalesniki/nale%C5%9Bniki.html",
+  "sourceDomain": "kwestiasmaku.com",
+  "originalLanguage": "pl",
+  "createdAt": "2026-11-12T19:55:08.208Z"
+}
