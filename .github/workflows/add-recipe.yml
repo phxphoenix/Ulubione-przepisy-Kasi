@@ -61,6 +61,9 @@ jobs:
           git config user.name "Kasia AI Chef"
           git config user.email "kasia-ai-chef@users.noreply.github.com"
           git add src/content/recipes/
+          if [ -d public/images/recipes ]; then
+            git add public/images/recipes/
+          fi
           if git diff --cached --quiet; then
             echo "::error::Nie wykryto nowego ani zmienionego przepisu w src/content/recipes/."
             exit 1

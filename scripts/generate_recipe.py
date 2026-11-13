@@ -33,6 +33,8 @@ except ImportError:  # pragma: no cover
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 RECIPES_DIR = REPO_ROOT / "src" / "content" / "recipes"
+PUBLIC_DIR = REPO_ROOT / "public"
+RECIPES_IMAGES_DIR = PUBLIC_DIR / "images" / "recipes"
 
 GROQ_EXCLUDED_MODEL_SUBSTRINGS: tuple[str, ...] = (
     "whisper",
@@ -75,8 +77,16 @@ GROQ_PROMPT_TEXT_CHARS = 12000
 MAX_PROMPT_TEXT_CHARS = FULL_PROMPT_TEXT_CHARS
 MAX_IMAGE_CANDIDATES = 25
 MIN_IMAGE_DIMENSION_PX = 200
+MIN_IMAGE_BYTES = 5000
+IMAGE_PROBE_MAX_BYTES = 65536
+IMAGE_PROBE_TIMEOUT = 10
+IMAGE_SEARCH_TIMEOUT = 10
 JINA_TRANSIENT_STATUS_CODES = frozenset({429, 500, 502, 503, 504})
 JINA_USER_AGENT = "ulubione-przepisy-kasi/1.0"
+WIKIMEDIA_USER_AGENT = (
+    "ulubione-przepisy-kasi/1.0 "
+    "(https://github.com/phxphoenix/Ulubione-przepisy-Kasi)"
+)
 
 OPENROUTER_FREE_MODELS: tuple[str, ...] = (
     "openrouter/free",
@@ -133,6 +143,12 @@ JINA_HTML_HEADERS: dict[str, str] = {
     "X-Return-Format": "html",
 }
 
+FACEBOOK_CRAWLER_HEADERS: dict[str, str] = {
+    "User-Agent": "facebookexternalhit/1.1",
+    "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+    "Accept-Language": "pl-PL,pl;q=0.9,en-US;q=0.8,en;q=0.7",
+}
+
 SYSTEM_INSTRUCTION = """Jesteś redaktorem książki kucharskiej "Ulubione przepisy Kasi".
 
 Twoim zadaniem jest przekształcenie surowych danych ze strony internetowej w kompletny, dopracowany, gotowy do gotowania przepis w formacie JSON zgodnym ze schematem.
@@ -151,7 +167,10 @@ Zasady redakcyjne (PRZESTRZEGAJ ICH BEZWZGLĘDNIE):
    `Śniadania`, `Zupy`, `Dania główne`, `Sałatki i przekąski`, `Desery i wypieki`, `Napoje i dodatki`.
 5. Poziom trudności: Wybierz dokładnie jedną wartość: `Łatwy`, `Średni` lub `Wymagający`.
 6. Kroki przygotowania: Rozpisz kroki w sposób przejrzysty, logiczny i przystępny (krok po kroku), numerując je kolejno od 1. Nadaj każdemu krokowi zwięzły tytuł, konkretną instrukcję oraz (gdy warto) krótką wskazówkę techniczną `tip`.
-7. Zdjęcia: Wybierz z dostarczonej listy znalezionych URL-i grafik najlepsze zdjęcie główne potrawy (`isMain: true` — dokładnie jedno zdjęcie główne) oraz opcjonalnie 1–5 dodatkowych zdjęć etapowych/prezentacyjnych (`isMain: false`) wraz z polskim opisem `caption`. Jeśli wybrane zdjęcie etapowe wyraźnie ilustruje konkretny krok, przypisz jego URL do pola `imageUrl` tego kroku. NIGDY nie wymyślaj adresów URL grafik — korzystaj wyłącznie z kandydatów z danych wejściowych.
+7. Zdjęcia i wyszukiwanie zastępcze:
+   - Jeśli w danych wejściowych podano listę kandydatów zdjęć, wybierz z niej najlepsze zdjęcie główne potrawy (`isMain: true` — dokładnie jedno zdjęcie główne) oraz opcjonalnie 1–5 dodatkowych zdjęć etapowych/prezentacyjnych (`isMain: false`) wraz z polskim opisem `caption`. Jeśli wybrane zdjęcie etapowe wyraźnie ilustruje konkretny krok, przypisz jego URL do pola `imageUrl` tego kroku. Pole `imageSearchQueries` pozostaw puste `[]`.
+   - Jeśli w danych wejściowych NIE wykryto żadnych kandydatów zdjęć (`Brak wykrytych zdjęć`), pozostaw tablicę `images` pustą `[]`, a w polu `imageSearchQueries` podaj 3–4 zwięzłe zapytania do wyszukiwarki zdjęć dopasowane do nazwy potrawy: najpierw dokładna polska nazwa potrawy z tytułu, następnie dokładne angielskie tłumaczenie nazwy potrawy, a na końcu prostsza klasyczna nazwa dania po polsku i po angielsku (np. `["Placki ziemniaczane z dynią i cheddarem", "Pumpkin potato pancakes with cheddar", "Placki ziemniaczane", "Potato pancakes"]`).
+   NIGDY nie wymyślaj adresów URL grafik — korzystaj wyłącznie z kandydatów z danych wejściowych.
 8. Wideo: Jeśli w danych wejściowych wykryto linki wideo (YouTube, Instagram, TikTok, MP4), umieść je w tablicy `videos` i skonstruuj dla nich poprawne adresy `embedUrl`, aby działały bezpośrednio na stronie:
    - YouTube: `https://www.youtube-nocookie.com/embed/ID_FILMU`
    - Instagram: `https://www.instagram.com/{p|reel|tv}/KOD/embed`
@@ -170,11 +189,30 @@ NOISE_ATTR_RE = re.compile(
 IMAGE_NOISE_PATH_RE = re.compile(
     r"(?:^|[/_\-.])(avatar|gravatar|emoji|smilies|favicon|spinner|loader|"
     r"spacer|pixel|blank|placeholder|doubleclick|googlesyndication|"
-    r"adservice|adsystem|taboola|outbrain|wp-includes)(?:$|[/_\-.])",
+    r"adservice|adsystem|taboola|outbrain|wp-includes|rsrc\.php|"
+    r"icons?|logos?|sprites?|hads-[a-z0-9-]+)(?:$|[/_\-.])",
     re.IGNORECASE,
 )
 IMAGE_NOISE_TOKEN_RE = re.compile(
-    r"(?:^|[/_\-\s.])(logo|icon|badge|ads|advert|pin-it|share|placeholder)(?:$|[/_\-\s.])",
+    r"(?:^|[/_\-\s.])(logos?|icons?|fblogo|badge|ads|advert|pin-it|share|"
+    r"placeholder|sprite|blank|login|signup|watermark)(?:$|[/_\-\s.])",
+    re.IGNORECASE,
+)
+SOCIAL_UI_IMAGE_URL_RE = re.compile(
+    r"(?:"
+    r"static\.xx\.fbcdn\.net/rsrc\.php|"
+    r"static\.cdninstagram\.com/rsrc\.php|"
+    r"(?:^|[/.])facebook\.com/images/|"
+    r"scontent[^/]*\.fbcdn\.net/hads-"
+    r")",
+    re.IGNORECASE,
+)
+EPHEMERAL_IMAGE_HOST_RE = re.compile(
+    r"(?:fbcdn\.net|cdninstagram\.com|tiktokcdn(?:-us|-eu)?\.com)",
+    re.IGNORECASE,
+)
+FACEBOOK_HOST_RE = re.compile(
+    r"^(?:[a-z0-9-]+\.)?(?:facebook\.com|fb\.com|fb\.watch)$",
     re.IGNORECASE,
 )
 URL_DIM_SUFFIX_RE = re.compile(r"-(\d{1,4})x(\d{1,4})(?:\.[a-z0-9]+)?$", re.IGNORECASE)
@@ -338,8 +376,8 @@ class RecipeStep(BaseModel):
         return _strip_or_none(value)
 
 
-class Recipe(BaseModel):
-    """Pydantic schema matching Astro Content Collection (`src/schemas/recipe.ts`) 100%."""
+class RecipeBase(BaseModel):
+    """Shared Pydantic fields and validators matching Astro Content Collection (`src/schemas/recipe.ts`)."""
 
     id: Optional[str] = Field(
         default=None, description="Identyfikator przepisu (taki sam jak slug)."
@@ -368,9 +406,6 @@ class Recipe(BaseModel):
     servings: float = Field(..., description="Liczba porcji lub sztuk (> 0).")
     difficulty: DifficultyLevel = Field(
         ..., description="Poziom trudności: Łatwy, Średni lub Wymagający."
-    )
-    images: list[RecipeImage] = Field(
-        ..., description="Lista zdjęć potrawy (co najmniej 1, jedno z isMain=true)."
     )
     videos: list[RecipeVideo] = Field(
         default_factory=list,
@@ -460,9 +495,7 @@ class Recipe(BaseModel):
         return cleaned
 
     @model_validator(mode="after")
-    def validate_required_collections(self) -> "Recipe":
-        if not self.images:
-            raise ValueError("Przepis wymaga co najmniej jednego zdjęcia.")
+    def validate_base_collections(self) -> "RecipeBase":
         if not self.ingredientGroups:
             raise ValueError("Przepis wymaga co najmniej jednej grupy składników.")
         if not self.steps:
@@ -470,7 +503,42 @@ class Recipe(BaseModel):
         return self
 
 
-RecipeSchema = Recipe
+class RecipeDraft(RecipeBase):
+    """LLM response schema supporting imageSearchQueries when source lacks valid images."""
+
+    images: list[RecipeImage] = Field(
+        default_factory=list,
+        description="Lista zdjęć z kandydatów wejściowych lub [] gdy brak kandydatów.",
+    )
+    imageSearchQueries: list[str] = Field(
+        default_factory=list,
+        description=(
+            "Gdy brak zdjęć w danych wejściowych: 2-4 krótkie zapytania po nazwie "
+            "potrawy (PL i EN) do pobrania wizualizacji z darmowego API."
+        ),
+    )
+
+    @field_validator("imageSearchQueries")
+    @classmethod
+    def clean_image_search_queries(cls, values: list[str]) -> list[str]:
+        return [item.strip() for item in values if item and item.strip()]
+
+
+class Recipe(RecipeBase):
+    """Final strict Pydantic schema matching Astro Content Collection (`src/schemas/recipe.ts`) 100%."""
+
+    images: list[RecipeImage] = Field(
+        ..., description="Lista zdjęć potrawy (co najmniej 1, jedno z isMain=true)."
+    )
+
+    @model_validator(mode="after")
+    def validate_required_images(self) -> "Recipe":
+        if not self.images:
+            raise ValueError("Przepis wymaga co najmniej jednego zdjęcia.")
+        return self
+
+
+RecipeSchema = RecipeDraft
 
 
 @dataclass
@@ -571,6 +639,9 @@ def is_valid_image_candidate(
     if path_lower.endswith((".svg", ".ico")):
         return False
 
+    if SOCIAL_UI_IMAGE_URL_RE.search(url):
+        return False
+
     if strict_dimensions:
         if width is not None and width < MIN_IMAGE_DIMENSION_PX:
             return False
@@ -602,6 +673,178 @@ def is_valid_image_candidate(
         return False
 
     return True
+
+
+def _is_facebook_url(url: str) -> bool:
+    """Return True for Facebook / fb.watch URLs where crawler UA recovers OpenGraph data."""
+    host = urlparse(url).netloc.lower().split("@")[-1].split(":")[0]
+    return bool(host and FACEBOOK_HOST_RE.match(host))
+
+
+def _is_ephemeral_image_url(url: str) -> bool:
+    """Return True if the CDN URL is time-limited (e.g. fbcdn.net signed with oe=) and must be saved locally."""
+    parsed = urlparse(url)
+    host = parsed.netloc.lower().split("@")[-1].split(":")[0]
+    if EPHEMERAL_IMAGE_HOST_RE.search(host):
+        return True
+    query = parse_qs(parsed.query)
+    return "oe" in query or "x-expires" in query
+
+
+def _parse_image_dimensions(data: bytes) -> Optional[tuple[int, int]]:
+    """Extract (width, height) from PNG, GIF, WebP, or JPEG headers without external dependencies."""
+    if len(data) < 24:
+        return None
+
+    # PNG: signature + IHDR width/height at offsets 16..24
+    if data[:8] == b"\x89PNG\r\n\x1a\n" and data[12:16] == b"IHDR":
+        w = int.from_bytes(data[16:20], "big")
+        h = int.from_bytes(data[20:24], "big")
+        return (w, h) if w > 0 and h > 0 else None
+
+    # GIF: GIF87a / GIF89a little-endian uint16 at offsets 6..10
+    if data[:6] in (b"GIF87a", b"GIF89a"):
+        w = int.from_bytes(data[6:8], "little")
+        h = int.from_bytes(data[8:10], "little")
+        return (w, h) if w > 0 and h > 0 else None
+
+    # WebP: RIFF....WEBP
+    if data[:4] == b"RIFF" and data[8:12] == b"WEBP" and len(data) >= 30:
+        chunk_type = data[12:16]
+        if chunk_type == b"VP8X":
+            w = 1 + int.from_bytes(data[24:27], "little")
+            h = 1 + int.from_bytes(data[27:30], "little")
+            return (w, h) if w > 0 and h > 0 else None
+        if chunk_type == b"VP8 " and data[23:26] == b"\x9d\x01\x2a":
+            w = int.from_bytes(data[26:28], "little") & 0x3FFF
+            h = int.from_bytes(data[28:30], "little") & 0x3FFF
+            return (w, h) if w > 0 and h > 0 else None
+        if chunk_type == b"VP8L" and data[20] == 0x2F:
+            bits = int.from_bytes(data[21:25], "little")
+            w = (bits & 0x3FFF) + 1
+            h = ((bits >> 14) & 0x3FFF) + 1
+            return (w, h) if w > 0 and h > 0 else None
+
+    # JPEG: scan SOF0..SOF3 / SOF5..SOF7 / SOF9..SOF11 / SOF13..SOF15 markers
+    if data[:2] == b"\xff\xd8":
+        idx = 2
+        n = len(data)
+        sof_markers = {
+            0xC0, 0xC1, 0xC2, 0xC3, 0xC5, 0xC6, 0xC7,
+            0xC9, 0xCA, 0xCB, 0xCD, 0xCE, 0xCF,
+        }
+        while idx + 4 <= n:
+            if data[idx] != 0xFF:
+                idx += 1
+                continue
+            while idx < n and data[idx] == 0xFF:
+                idx += 1
+            if idx >= n:
+                break
+            marker = data[idx]
+            idx += 1
+            if marker in (0xD8, 0xD9, 0x01) or (0xD0 <= marker <= 0xD7):
+                continue
+            if idx + 2 > n:
+                break
+            seg_len = int.from_bytes(data[idx : idx + 2], "big")
+            if seg_len < 2:
+                break
+            if marker in sof_markers and idx + 7 <= n:
+                h = int.from_bytes(data[idx + 3 : idx + 5], "big")
+                w = int.from_bytes(data[idx + 5 : idx + 7], "big")
+                return (w, h) if w > 0 and h > 0 else None
+            idx += seg_len
+
+    return None
+
+
+def _probe_image_url(
+    url: str,
+    *,
+    referer: Optional[str] = None,
+    user_agent: Optional[str] = None,
+) -> tuple[str, Optional[tuple[int, int]], Optional[int]]:
+    """Probe an image URL and return ('ok'|'reject'|'inconclusive', dimensions, byte_size)."""
+    headers: dict[str, str] = {
+        "User-Agent": user_agent or BROWSER_HEADERS["User-Agent"],
+        "Accept": "image/avif,image/webp,image/png,image/jpeg,*/*;q=0.8",
+    }
+    if referer:
+        headers["Referer"] = referer
+
+    try:
+        with requests.get(
+            url,
+            headers=headers,
+            stream=True,
+            timeout=IMAGE_PROBE_TIMEOUT,
+            allow_redirects=True,
+        ) as resp:
+            status = resp.status_code
+            if status in {400, 404, 410}:
+                return "reject", None, None
+            if status >= 400:
+                return "inconclusive", None, None
+
+            content_type = (resp.headers.get("Content-Type") or "").split(";", 1)[0].strip().lower()
+            if content_type and (
+                not content_type.startswith("image/")
+                or content_type in {"image/svg+xml", "image/x-icon", "image/vnd.microsoft.icon"}
+            ):
+                return "reject", None, None
+
+            raw_cl = resp.headers.get("Content-Length")
+            declared_len = int(raw_cl) if raw_cl and raw_cl.isdigit() else None
+            if declared_len is not None and declared_len < MIN_IMAGE_BYTES:
+                return "reject", None, declared_len
+
+            buf = bytearray()
+            for chunk in resp.iter_content(chunk_size=16384):
+                if not chunk:
+                    continue
+                buf.extend(chunk)
+                if len(buf) >= IMAGE_PROBE_MAX_BYTES:
+                    break
+
+            sample = bytes(buf)
+            if len(sample) < IMAGE_PROBE_MAX_BYTES and len(sample) < MIN_IMAGE_BYTES:
+                return "reject", None, len(sample)
+
+            dims = _parse_image_dimensions(sample)
+            if dims is not None:
+                w, h = dims
+                if w < MIN_IMAGE_DIMENSION_PX or h < MIN_IMAGE_DIMENSION_PX:
+                    return "reject", dims, declared_len or len(sample)
+
+            return "ok", dims, declared_len or len(sample)
+    except requests.RequestException:
+        return "inconclusive", None, None
+
+
+def _verify_image_candidates(
+    candidates: Sequence[ImageCandidate],
+    *,
+    referer: Optional[str] = None,
+) -> list[ImageCandidate]:
+    """Filter out dead links, non-images, and tiny UI icons (< MIN_IMAGE_BYTES or < 200x200)."""
+    verified: list[ImageCandidate] = []
+    for cand in candidates:
+        if not is_valid_image_candidate(cand.url, alt=cand.alt):
+            continue
+        status, dims, byte_size = _probe_image_url(cand.url, referer=referer)
+        if status == "reject":
+            log_info(
+                f"Odrzucono kandydata zdjęcia ({cand.source}, dims={dims}, bytes={byte_size}): {cand.url}"
+            )
+            continue
+        if status == "inconclusive" and cand.priority > 3:
+            log_info(
+                f"Pominięto niezweryfikowanego kandydata niskiego priorytetu ({cand.source}): {cand.url}"
+            )
+            continue
+        verified.append(cand)
+    return verified
 
 
 def parse_srcset_best(srcset_value: str, base_url: str) -> Optional[str]:
@@ -1181,6 +1424,24 @@ def parse_html_document(
             if cand:
                 videos.append(cand)
 
+    article_text = _extract_article_text(soup)
+    if len(article_text) < 250:
+        meta_parts: list[str] = []
+        for meta_sel in (
+            "meta[property='og:title']",
+            "meta[property='og:description']",
+            "meta[name='description']",
+        ):
+            for tag in soup.select(meta_sel):
+                content = tag.get("content")
+                if isinstance(content, str):
+                    cleaned_meta = content.strip()
+                    if cleaned_meta and cleaned_meta not in meta_parts:
+                        meta_parts.append(cleaned_meta)
+        if meta_parts:
+            meta_text = "\n\n".join(meta_parts)
+            article_text = f"{meta_text}\n\n{article_text}".strip() if article_text else meta_text
+
     return {
         "source_url": source_url,
         "final_url": final_url,
@@ -1189,16 +1450,17 @@ def parse_html_document(
         "json_ld_recipes": json_ld_recipes,
         "images": images,
         "videos": videos,
-        "article_text": _extract_article_text(soup),
+        "article_text": article_text,
     }
 
 
 def extract_from_html(url: str) -> Optional[dict[str, Any]]:
     """Step A: Scrape HTML via requests + BeautifulSoup for JSON-LD, images, videos, and fallback text."""
+    headers = FACEBOOK_CRAWLER_HEADERS if _is_facebook_url(url) else BROWSER_HEADERS
     try:
         response = requests.get(
             url,
-            headers=BROWSER_HEADERS,
+            headers=headers,
             timeout=REQUEST_TIMEOUT_HTML,
             allow_redirects=True,
         )
@@ -1208,8 +1470,10 @@ def extract_from_html(url: str) -> Optional[dict[str, Any]]:
         return None
 
     parsed = parse_html_document(response.content, url, response.url or url)
-    if not parsed["json_ld_recipes"] and _is_challenge_or_error_text(
-        parsed["article_text"], parsed["page_title"]
+    if (
+        not parsed["json_ld_recipes"]
+        and not parsed["images"]
+        and _is_challenge_or_error_text(parsed["article_text"], parsed["page_title"])
     ):
         log_warn("Krok A zwrócił stronę blokady lub błędu zamiast treści przepisu.")
         return None
@@ -1396,7 +1660,7 @@ def collect_page_data(url: str) -> ExtractedPageData:
         if not videos:
             videos.extend(jina_videos)
 
-    deduped_images = _dedupe_images(images)
+    deduped_images = _verify_image_candidates(_dedupe_images(images), referer=final_url)
     deduped_videos = _dedupe_videos(videos)
 
     return ExtractedPageData(
@@ -1420,6 +1684,61 @@ def _compact_jsonld_recipes(recipes: Sequence[dict[str, Any]]) -> list[dict[str,
     ]
 
 
+NO_IMAGES_PROMPT_BLOCK = (
+    "=== DOSTĘPNE KANDYDATY ZDJĘĆ ===\n"
+    "Brak wykrytych zdjęć w materiale źródłowym.\n"
+    "INSTRUKCJA ROZGAŁĘZIENIA: Zostaw pole `images` jako pustą tablicę `[]`. "
+    "W polu `imageSearchQueries` podaj 3–4 krótkie zapytania do wyszukiwarki zdjęć "
+    "(1: dokładna polska nazwa potrawy z tytułu, 2: dokładne angielskie tłumaczenie "
+    "nazwy potrawy, 3–4: prostsza/klasyczna nazwa dania po polsku i po angielsku)."
+)
+
+
+def _format_media_prompt_sections(
+    data: ExtractedPageData,
+    *,
+    max_images: Optional[int] = None,
+    max_videos: Optional[int] = None,
+) -> list[str]:
+    """Format image and video prompt sections consistently for full and compact prompts."""
+    sections: list[str] = []
+
+    if data.image_candidates:
+        img_slice = (
+            data.image_candidates[:max_images]
+            if max_images is not None
+            else data.image_candidates
+        )
+        img_lines = []
+        for idx, img in enumerate(img_slice, start=1):
+            alt_info = f" | alt: {img.alt}" if img.alt else ""
+            img_lines.append(f"{idx}. [{img.source}] {img.url}{alt_info}")
+        sections.append(
+            "=== DOSTĘPNE KANDYDATY ZDJĘĆ (wybierz wyłącznie z tej listy) ===\n"
+            + "\n".join(img_lines)
+        )
+    else:
+        sections.append(NO_IMAGES_PROMPT_BLOCK)
+
+    if data.video_candidates:
+        vid_slice = (
+            data.video_candidates[:max_videos]
+            if max_videos is not None
+            else data.video_candidates
+        )
+        vid_lines = []
+        for idx, vid in enumerate(vid_slice, start=1):
+            title_info = f" | tytuł: {vid.title}" if vid.title else ""
+            vid_lines.append(
+                f"{idx}. [{vid.platform} | {vid.source}] url={vid.url} | embedUrl={vid.embed_url}{title_info}"
+            )
+        sections.append("=== WYKRYTE MATERIAŁY WIDEO ===\n" + "\n".join(vid_lines))
+    else:
+        sections.append("=== WYKRYTE MATERIAŁY WIDEO ===\nBrak wykrytych filmów.")
+
+    return sections
+
+
 def build_prompt(
     data: ExtractedPageData,
     max_text_chars: int = FULL_PROMPT_TEXT_CHARS,
@@ -1436,25 +1755,7 @@ def build_prompt(
         jsonld_str = json.dumps(compact_recipes, ensure_ascii=False)
         sections.append(f"=== DANE STRUKTURALNE JSON-LD (Schema.org Recipe) ===\n{jsonld_str}")
 
-    if data.image_candidates:
-        img_lines = []
-        for idx, img in enumerate(data.image_candidates, start=1):
-            alt_info = f" | alt: {img.alt}" if img.alt else ""
-            img_lines.append(f"{idx}. [{img.source}] {img.url}{alt_info}")
-        sections.append("=== DOSTĘPNE KANDYDATY ZDJĘĆ (wybierz wyłącznie z tej listy) ===\n" + "\n".join(img_lines))
-    else:
-        sections.append("=== DOSTĘPNE KANDYDATY ZDJĘĆ ===\nBrak wykrytych zdjęć.")
-
-    if data.video_candidates:
-        vid_lines = []
-        for idx, vid in enumerate(data.video_candidates, start=1):
-            title_info = f" | tytuł: {vid.title}" if vid.title else ""
-            vid_lines.append(
-                f"{idx}. [{vid.platform} | {vid.source}] url={vid.url} | embedUrl={vid.embed_url}{title_info}"
-            )
-        sections.append("=== WYKRYTE MATERIAŁY WIDEO ===\n" + "\n".join(vid_lines))
-    else:
-        sections.append("=== WYKRYTE MATERIAŁY WIDEO ===\nBrak wykrytych filmów.")
+    sections.extend(_format_media_prompt_sections(data))
 
     jina_text = data.jina_markdown
     html_text = data.html_article_text
@@ -1492,27 +1793,7 @@ def build_groq_prompt(data: ExtractedPageData) -> str:
         jsonld_str = json.dumps(compact_recipes, ensure_ascii=False)
         sections.append(f"=== DANE STRUKTURALNE JSON-LD (Schema.org Recipe) ===\n{jsonld_str}")
 
-    if data.image_candidates:
-        img_lines = []
-        for idx, img in enumerate(data.image_candidates[:12], start=1):
-            alt_info = f" | alt: {img.alt}" if img.alt else ""
-            img_lines.append(f"{idx}. [{img.source}] {img.url}{alt_info}")
-        sections.append(
-            "=== DOSTĘPNE KANDYDATY ZDJĘĆ (wybierz wyłącznie z tej listy) ===\n" + "\n".join(img_lines)
-        )
-    else:
-        sections.append("=== DOSTĘPNE KANDYDATY ZDJĘĆ ===\nBrak wykrytych zdjęć.")
-
-    if data.video_candidates:
-        vid_lines = []
-        for idx, vid in enumerate(data.video_candidates[:5], start=1):
-            title_info = f" | tytuł: {vid.title}" if vid.title else ""
-            vid_lines.append(
-                f"{idx}. [{vid.platform} | {vid.source}] url={vid.url} | embedUrl={vid.embed_url}{title_info}"
-            )
-        sections.append("=== WYKRYTE MATERIAŁY WIDEO ===\n" + "\n".join(vid_lines))
-    else:
-        sections.append("=== WYKRYTE MATERIAŁY WIDEO ===\nBrak wykrytych filmów.")
+    sections.extend(_format_media_prompt_sections(data, max_images=12, max_videos=5))
 
     if not has_recipe_jsonld:
         raw_text = data.jina_markdown or data.html_article_text
@@ -1610,7 +1891,7 @@ Zasady redakcyjne:
 4. Kategoria (dokładnie jedna z 6): Śniadania, Zupy, Dania główne, Sałatki i przekąski, Desery i wypieki, Napoje i dodatki.
 5. Poziom trudności: Łatwy, Średni lub Wymagający.
 6. Kroki numerowane kolejno od 1, ze zwięzłym tytułem i instrukcją.
-7. Zdjęcia i wideo: wybieraj wyłącznie z dostarczonych kandydatów (dokładnie jedno zdjęcie z isMain=true), nie wymyślaj URL-i."""
+7. Zdjęcia i wideo: wybieraj wyłącznie z dostarczonych kandydatów (dokładnie jedno zdjęcie z isMain=true, `imageSearchQueries`: []). Gdy brak zdjęć w danych wejściowych, zostaw `images`: [] i podaj w `imageSearchQueries` 3-4 krótkie zapytania po nazwie potrawy (PL i EN). Nie wymyślaj URL-i."""
 
 GROQ_RECIPE_EXAMPLE_JSON = """{
   "id": "slug-przepisu",
@@ -1631,6 +1912,7 @@ GROQ_RECIPE_EXAMPLE_JSON = """{
       "isMain": true
     }
   ],
+  "imageSearchQueries": [],
   "videos": [],
   "ingredientGroups": [
     {
@@ -2269,6 +2551,10 @@ def generate_unique_slug(title: str, recipes_dir: Path) -> str:
 def _sanitize_images(
     raw_images: Any, extracted_candidates: Sequence[ImageCandidate]
 ) -> list[dict[str, Any]]:
+    """Ground recipe images strictly against extracted source candidates."""
+    if not extracted_candidates:
+        return []
+
     allowed_urls = {cand.url for cand in extracted_candidates}
     cleaned: list[dict[str, Any]] = []
     seen_urls: set[str] = set()
@@ -2283,7 +2569,7 @@ def _sanitize_images(
             parsed = urlparse(raw_url)
             if parsed.scheme not in {"http", "https"} or not parsed.netloc:
                 continue
-            if allowed_urls and raw_url not in allowed_urls:
+            if raw_url not in allowed_urls:
                 continue
             if raw_url in seen_urls:
                 continue
@@ -2297,25 +2583,28 @@ def _sanitize_images(
                 entry["caption"] = caption
             cleaned.append(entry)
 
-    if not cleaned and extracted_candidates:
+    if not cleaned:
         for idx, cand in enumerate(extracted_candidates[:4]):
             entry = {"url": cand.url, "isMain": idx == 0}
             if cand.alt:
                 entry["caption"] = cand.alt
             cleaned.append(entry)
 
-    if not cleaned:
-        raise ValueError("Brak prawidłowych zdjęć potrawy — schemat Astro wymaga co najmniej 1 zdjęcia.")
+    return _normalize_main_image(cleaned)
 
-    main_index = next((i for i, img in enumerate(cleaned) if img.get("isMain")), 0)
-    for idx, img in enumerate(cleaned):
+
+def _normalize_main_image(images: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    """Ensure exactly one image has isMain=True and sits at index 0."""
+    if not images:
+        return images
+    main_index = next((i for i, img in enumerate(images) if img.get("isMain")), 0)
+    for idx, img in enumerate(images):
         img["isMain"] = idx == main_index
 
     if main_index > 0:
-        main_img = cleaned.pop(main_index)
-        cleaned.insert(0, main_img)
-
-    return cleaned
+        main_img = images.pop(main_index)
+        images.insert(0, main_img)
+    return images
 
 
 def _sanitize_videos(
@@ -2456,10 +2745,392 @@ def _sanitize_ingredient_groups(raw_groups: Any) -> list[dict[str, Any]]:
     return cleaned_groups
 
 
+CONTENT_TYPE_TO_EXT: dict[str, str] = {
+    "image/jpeg": ".jpg",
+    "image/jpg": ".jpg",
+    "image/png": ".png",
+    "image/webp": ".webp",
+    "image/avif": ".avif",
+}
+
+FALLBACK_NOISE_TITLE_RE = re.compile(
+    r"(?:^|[\s_\-/])(halloween|jack-o-lantern|pumpkin[\s_-]*patch|map|flag|"
+    r"coat[\s_-]*of[\s_-]*arms|logo|icon|diagram|portrait|building|street|"
+    r"stamp|coin|herbarium|botanical|list[\s_-]+of|lista[\s_-]+|disambiguation|"
+    r"ujednoznacznienie)(?:$|[\s_\-/.])",
+    re.IGNORECASE,
+)
+
+FALLBACK_QUERY_STOPWORDS: frozenset[str] = frozenset(
+    {"z", "ze", "na", "w", "we", "po", "do", "od", "i", "oraz", "with", "and", "in", "on", "of", "the", "a", "an"}
+)
+
+
+def _tokenize_search_text(text: str) -> set[str]:
+    return {
+        tok
+        for tok in re.findall(r"[^\W_]{2,}", text.lower())
+        if tok not in FALLBACK_QUERY_STOPWORDS
+    }
+
+
+def _build_image_search_queries(title: str, raw_queries: Any) -> list[str]:
+    """Build ordered, deduplicated search queries from LLM suggestions and recipe title."""
+    candidates: list[str] = []
+    if isinstance(raw_queries, list):
+        for q in raw_queries:
+            if isinstance(q, str) and q.strip():
+                candidates.append(q.strip())
+
+    clean_title = title.strip()
+    if clean_title:
+        candidates.append(clean_title)
+        simplified = re.split(r"\s+(?:z|ze|na|w|po|with|and|,)\s+", clean_title, maxsplit=1, flags=re.IGNORECASE)[0].strip()
+        if simplified and simplified.lower() != clean_title.lower() and len(simplified) >= 4:
+            candidates.append(simplified)
+
+    deduped: list[str] = []
+    seen: set[str] = set()
+    for q in candidates:
+        key = q.lower()
+        if key not in seen:
+            seen.add(key)
+            deduped.append(q)
+    return deduped[:6]
+
+
+def _is_acceptable_fallback_dims(width: Any, height: Any) -> bool:
+    if not isinstance(width, int) or not isinstance(height, int):
+        return False
+    if width < 400 or height < 300:
+        return False
+    ratio = width / height
+    return 0.5 <= ratio <= 2.5
+
+
+def _score_fallback_candidate(
+    cand_title: str,
+    query: str,
+    title_tokens: set[str],
+    query_idx: int,
+    *,
+    is_wikipedia_article: bool = False,
+) -> float:
+    cand_tokens = _tokenize_search_text(cand_title)
+    query_tokens = _tokenize_search_text(query)
+    if not cand_tokens:
+        return -1.0
+
+    overlap_query = len(cand_tokens & query_tokens)
+    overlap_title = len(cand_tokens & title_tokens)
+    if overlap_query == 0 and overlap_title == 0:
+        return -1.0
+
+    score = overlap_query * 3.0 + overlap_title * 2.0
+    score -= query_idx * 0.5
+    if is_wikipedia_article:
+        score += 4.0
+    if query.lower() in cand_title.lower():
+        score += 3.0
+    return score
+
+
+def _search_wikipedia_pageimages(query: str, lang: str) -> list[dict[str, Any]]:
+    """Query Wikipedia PageImages API (keyless) for a dish article thumbnail."""
+    headers = {"User-Agent": WIKIMEDIA_USER_AGENT}
+    try:
+        resp = requests.get(
+            f"https://{lang}.wikipedia.org/w/api.php",
+            params={
+                "action": "query",
+                "generator": "search",
+                "gsrsearch": query,
+                "gsrlimit": 5,
+                "prop": "pageimages",
+                "pithumbsize": 1200,
+                "format": "json",
+            },
+            headers=headers,
+            timeout=IMAGE_SEARCH_TIMEOUT,
+        )
+        resp.raise_for_status()
+        pages = resp.json().get("query", {}).get("pages", {})
+    except (requests.RequestException, ValueError) as exc:
+        log_warn(f"Wyszukiwanie Wikipedia ({lang}) nie powiodło się dla '{query}': {exc}")
+        return []
+
+    results: list[dict[str, Any]] = []
+    for page in pages.values():
+        if not isinstance(page, dict):
+            continue
+        page_title = str(page.get("title") or "").strip()
+        thumb = page.get("thumbnail") or {}
+        url = _strip_or_none(thumb.get("source"))
+        if not url or not page_title or FALLBACK_NOISE_TITLE_RE.search(page_title):
+            continue
+        if not _is_acceptable_fallback_dims(thumb.get("width"), thumb.get("height")):
+            continue
+        results.append({
+            "url": url,
+            "title": page_title,
+            "source": f"wikipedia-{lang}",
+            "is_wikipedia": True,
+        })
+    return results
+
+
+def _search_wikimedia_commons(query: str) -> list[dict[str, Any]]:
+    """Query Wikimedia Commons API (keyless) for bitmap food photos."""
+    headers = {"User-Agent": WIKIMEDIA_USER_AGENT}
+    try:
+        resp = requests.get(
+            "https://commons.wikimedia.org/w/api.php",
+            params={
+                "action": "query",
+                "generator": "search",
+                "gsrsearch": f"{query} filetype:bitmap",
+                "gsrnamespace": 6,
+                "gsrlimit": 6,
+                "prop": "imageinfo",
+                "iiprop": "url|size|mime",
+                "iiurlwidth": 1200,
+                "format": "json",
+            },
+            headers=headers,
+            timeout=IMAGE_SEARCH_TIMEOUT,
+        )
+        resp.raise_for_status()
+        pages = resp.json().get("query", {}).get("pages", {})
+    except (requests.RequestException, ValueError) as exc:
+        log_warn(f"Wyszukiwanie Wikimedia Commons nie powiodło się dla '{query}': {exc}")
+        return []
+
+    results: list[dict[str, Any]] = []
+    for page in pages.values():
+        if not isinstance(page, dict):
+            continue
+        raw_title = str(page.get("title") or "").removeprefix("File:").strip()
+        if not raw_title or FALLBACK_NOISE_TITLE_RE.search(raw_title):
+            continue
+        info_list = page.get("imageinfo")
+        if not isinstance(info_list, list) or not info_list:
+            continue
+        info = info_list[0]
+        mime = str(info.get("mime") or "").lower()
+        if mime not in {"image/jpeg", "image/png", "image/webp"}:
+            continue
+        if not _is_acceptable_fallback_dims(info.get("width"), info.get("height")):
+            continue
+        url = _strip_or_none(info.get("thumburl")) or _strip_or_none(info.get("url"))
+        if not url:
+            continue
+        results.append({
+            "url": url,
+            "title": raw_title,
+            "source": "wikimedia-commons",
+            "is_wikipedia": False,
+        })
+    return results
+
+
+def _search_openverse_images(query: str) -> list[dict[str, Any]]:
+    """Query Openverse API (keyless) with short timeout as secondary fallback."""
+    headers = {"User-Agent": WIKIMEDIA_USER_AGENT}
+    try:
+        resp = requests.get(
+            "https://api.openverse.org/v1/images/",
+            params={"q": query, "page_size": 5, "mature": "false"},
+            headers=headers,
+            timeout=6,
+        )
+        resp.raise_for_status()
+        items = resp.json().get("results", [])
+    except (requests.RequestException, ValueError) as exc:
+        log_warn(f"Wyszukiwanie Openverse nie powiodło się dla '{query}': {exc}")
+        return []
+
+    results: list[dict[str, Any]] = []
+    for item in items:
+        if not isinstance(item, dict):
+            continue
+        item_title = str(item.get("title") or "").strip()
+        url = _strip_or_none(item.get("url"))
+        if not url or (item_title and FALLBACK_NOISE_TITLE_RE.search(item_title)):
+            continue
+        if not _is_acceptable_fallback_dims(item.get("width"), item.get("height")):
+            continue
+        if not is_valid_image_candidate(url, alt=item_title):
+            continue
+        results.append({
+            "url": url,
+            "title": item_title or query,
+            "source": "openverse",
+            "is_wikipedia": False,
+        })
+    return results
+
+
+def search_fallback_images(
+    title: str,
+    queries: Any = None,
+) -> list[dict[str, Any]]:
+    """Search keyless free APIs (Wikipedia, Wikimedia Commons, Openverse) for a dish photo."""
+    ordered_queries = _build_image_search_queries(title, queries)
+    if not ordered_queries:
+        return []
+
+    log_info(f"Brak zdjęć w źródle — wyszukuję wizualizację potrawy dla: {ordered_queries}")
+    title_tokens = _tokenize_search_text(title)
+    scored_candidates: list[tuple[float, dict[str, Any]]] = []
+    seen_urls: set[str] = set()
+
+    for q_idx, query in enumerate(ordered_queries):
+        batch: list[dict[str, Any]] = []
+        batch.extend(_search_wikipedia_pageimages(query, "pl"))
+        batch.extend(_search_wikipedia_pageimages(query, "en"))
+        batch.extend(_search_wikimedia_commons(query))
+
+        for item in batch:
+            url = item["url"]
+            if url in seen_urls:
+                continue
+            score = _score_fallback_candidate(
+                item["title"],
+                query,
+                title_tokens,
+                q_idx,
+                is_wikipedia_article=item["is_wikipedia"],
+            )
+            if score > 0:
+                seen_urls.add(url)
+                scored_candidates.append((score, item))
+
+    if not scored_candidates:
+        for q_idx, query in enumerate(ordered_queries[:3]):
+            for item in _search_openverse_images(query):
+                url = item["url"]
+                if url in seen_urls:
+                    continue
+                score = _score_fallback_candidate(
+                    item["title"], query, title_tokens, q_idx
+                )
+                if score > 0:
+                    seen_urls.add(url)
+                    scored_candidates.append((score, item))
+
+    scored_candidates.sort(key=lambda pair: pair[0], reverse=True)
+
+    for _, item in scored_candidates[:8]:
+        ua = WIKIMEDIA_USER_AGENT if item["source"].startswith(("wikipedia", "wikimedia", "openverse")) else None
+        status, dims, byte_size = _probe_image_url(item["url"], user_agent=ua)
+        if status == "ok":
+            log_info(
+                f"Znaleziono wizualizację zastępczą [{item['source']}] "
+                f"(dims={dims}, bytes={byte_size}): {item['url']}"
+            )
+            return [
+                {
+                    "url": item["url"],
+                    "caption": f"{title} (zdjęcie poglądowe)",
+                    "isMain": True,
+                }
+            ]
+
+    return []
+
+
+def _download_image_locally(
+    url: str,
+    slug: str,
+    index: int,
+    recipes_images_dir: Path,
+    *,
+    referer: Optional[str] = None,
+) -> Optional[str]:
+    """Download an ephemeral CDN image locally under public/images/recipes/ and return site-relative URL."""
+    headers: dict[str, str] = {
+        "User-Agent": BROWSER_HEADERS["User-Agent"],
+        "Accept": "image/avif,image/webp,image/png,image/jpeg,*/*;q=0.8",
+    }
+    if referer:
+        headers["Referer"] = referer
+
+    try:
+        resp = requests.get(
+            url,
+            headers=headers,
+            timeout=IMAGE_PROBE_TIMEOUT,
+            allow_redirects=True,
+        )
+        resp.raise_for_status()
+    except requests.RequestException as exc:
+        log_warn(f"Nie udało się zapisać lokalnie zdjęcia {url}: {exc}")
+        return None
+
+    content_type = (resp.headers.get("Content-Type") or "").split(";", 1)[0].strip().lower()
+    ext = CONTENT_TYPE_TO_EXT.get(content_type)
+    if not ext:
+        path_ext = Path(urlparse(url).path).suffix.lower()
+        ext = path_ext if path_ext in {".jpg", ".jpeg", ".png", ".webp", ".avif"} else ".jpg"
+    if ext == ".jpeg":
+        ext = ".jpg"
+
+    data = resp.content
+    if len(data) < MIN_IMAGE_BYTES:
+        log_warn(f"Pobrane zdjęcie jest zbyt małe ({len(data)} B): {url}")
+        return None
+
+    dims = _parse_image_dimensions(data)
+    if dims is not None and (dims[0] < MIN_IMAGE_DIMENSION_PX or dims[1] < MIN_IMAGE_DIMENSION_PX):
+        log_warn(f"Pobrane zdjęcie ma zbyt małe wymiary {dims}: {url}")
+        return None
+
+    recipes_images_dir.mkdir(parents=True, exist_ok=True)
+    suffix = "main" if index == 0 else f"step-{index}"
+    filename = f"{slug}-{suffix}{ext}"
+    target = recipes_images_dir / filename
+    target.write_bytes(data)
+    log_info(f"Zapisano lokalną kopię zdjęcia: {target}")
+    return f"/images/recipes/{filename}"
+
+
+def _persist_ephemeral_images(
+    images: list[dict[str, Any]],
+    steps: list[dict[str, Any]],
+    slug: str,
+    recipes_images_dir: Path,
+    *,
+    referer: Optional[str] = None,
+) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
+    """Persist expiring CDN URLs (e.g. fbcdn.net) to public/images/recipes/ and rewrite references."""
+    url_mapping: dict[str, str] = {}
+    for idx, img in enumerate(images):
+        raw_url = img.get("url", "")
+        if not raw_url or not _is_ephemeral_image_url(raw_url):
+            continue
+        local_url = _download_image_locally(
+            raw_url, slug, idx, recipes_images_dir, referer=referer
+        )
+        if local_url:
+            url_mapping[raw_url] = local_url
+            img["url"] = local_url
+
+    if url_mapping:
+        for step in steps:
+            step_img = step.get("imageUrl")
+            if step_img and step_img in url_mapping:
+                step["imageUrl"] = url_mapping[step_img]
+
+    return images, steps
+
+
 def finalize_recipe(
     raw_recipe: dict[str, Any],
     extracted: ExtractedPageData,
     recipes_dir: Path,
+    *,
+    recipes_images_dir: Path = RECIPES_IMAGES_DIR,
+    fallback_image_search_fn: Optional[Any] = None,
 ) -> Recipe:
     """Normalize, ground media URLs, assign deterministic metadata, and validate against Recipe schema."""
     title = _strip_or_none(raw_recipe.get("title")) or "Przepis kulinarny"
@@ -2488,10 +3159,28 @@ def finalize_recipe(
         servings_clean = int(servings_clean)
 
     images = _sanitize_images(raw_recipe.get("images"), extracted.image_candidates)
+    if not images:
+        search_fn = fallback_image_search_fn or search_fallback_images
+        images = _normalize_main_image(
+            search_fn(title, raw_recipe.get("imageSearchQueries"))
+        )
+
+    if not images:
+        raise ValueError(
+            "Brak prawidłowych zdjęć potrawy — nie udało się znaleźć grafiki w źródle ani w darmowych API."
+        )
+
     allowed_img_urls = {cand.url for cand in extracted.image_candidates} | {
         img["url"] for img in images
     }
     steps = _sanitize_steps(raw_recipe.get("steps"), allowed_img_urls)
+    images, steps = _persist_ephemeral_images(
+        images,
+        steps,
+        slug,
+        recipes_images_dir,
+        referer=extracted.final_url,
+    )
     videos = _sanitize_videos(
         raw_recipe.get("videos"), extracted.video_candidates, extracted.final_url
     )
