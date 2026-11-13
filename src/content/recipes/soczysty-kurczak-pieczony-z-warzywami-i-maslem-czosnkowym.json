@@ -1,0 +1,251 @@
+{
+  "id": "soczysty-kurczak-pieczony-z-warzywami-i-maslem-czosnkowym",
+  "slug": "soczysty-kurczak-pieczony-z-warzywami-i-maslem-czosnkowym",
+  "title": "Soczysty kurczak pieczony z warzywami i masłem czosnkowym",
+  "summary": "Wyjątkowy przepis na całe kurczaka z aromatycznym masłem ziołowo-czosnkowym i pieczonymi warzywami.",
+  "category": "Dania główne",
+  "tags": [
+    "kurczak",
+    "obiad",
+    "pieczony kurczak",
+    "danie główne",
+    "czosnek"
+  ],
+  "prepTimeMinutes": 30,
+  "cookTimeMinutes": 90,
+  "totalTimeMinutes": 120,
+  "servings": 4.0,
+  "difficulty": "Średni",
+  "videos": [],
+  "ingredientGroups": [
+    {
+      "groupName": "Gotowanie kurczaka",
+      "items": [
+        {
+          "name": "cały kurczak",
+          "amount": 1.0,
+          "unit": "szt"
+        },
+        {
+          "name": "woda",
+          "amount": 3.0,
+          "unit": "l"
+        },
+        {
+          "name": "łodyga selera",
+          "amount": 1.0,
+          "unit": "szt"
+        },
+        {
+          "name": "ziarnka pieprzu czarnego",
+          "amount": 3.0,
+          "unit": "g"
+        },
+        {
+          "name": "czosnek",
+          "amount": 1.0,
+          "unit": "szt",
+          "notes": "cała główka"
+        },
+        {
+          "name": "sól",
+          "amount": 3.0,
+          "unit": "g"
+        },
+        {
+          "name": "pietruszka",
+          "amount": 15.0,
+          "unit": "g",
+          "notes": "natka"
+        },
+        {
+          "name": "zioła prowansalskie",
+          "amount": 7.0,
+          "unit": "g"
+        }
+      ]
+    },
+    {
+      "groupName": "Masło czosnkowe i przyprawy",
+      "items": [
+        {
+          "name": "masło",
+          "amount": 150.0,
+          "unit": "g",
+          "notes": "miękkie"
+        },
+        {
+          "name": "pietruszka",
+          "amount": 10.0,
+          "unit": "g",
+          "notes": "posiekana"
+        },
+        {
+          "name": "czosnek",
+          "amount": 3.0,
+          "unit": "goździki",
+          "notes": "przeasowane"
+        },
+        {
+          "name": "ostra papryka",
+          "amount": 3.0,
+          "unit": "g"
+        },
+        {
+          "name": "sól",
+          "amount": 2.0,
+          "unit": "g"
+        },
+        {
+          "name": "czarny pieprz",
+          "amount": 1.0,
+          "unit": "g"
+        }
+      ]
+    },
+    {
+      "groupName": "Warzywa",
+      "items": [
+        {
+          "name": "ziemniaki",
+          "amount": 5.0,
+          "unit": "szt",
+          "notes": "obrane i pokrojone"
+        },
+        {
+          "name": "cebula",
+          "amount": 1.0,
+          "unit": "szt",
+          "notes": "pokrojona w piórka"
+        },
+        {
+          "name": "płatki chili",
+          "amount": 2.0,
+          "unit": "g"
+        },
+        {
+          "name": "sól",
+          "amount": 2.0,
+          "unit": "g"
+        },
+        {
+          "name": "czarny pieprz",
+          "amount": 1.0,
+          "unit": "g"
+        },
+        {
+          "name": "olej",
+          "amount": 10.0,
+          "unit": "ml"
+        },
+        {
+          "name": "marchewka",
+          "amount": 1.0,
+          "unit": "szt",
+          "notes": "pokrojona"
+        }
+      ]
+    },
+    {
+      "groupName": "Sos i dodatek",
+      "items": [
+        {
+          "name": "ogórki",
+          "amount": 2.0,
+          "unit": "szt",
+          "notes": "pokrojone"
+        },
+        {
+          "name": "jogurt",
+          "amount": 100.0,
+          "unit": "g"
+        },
+        {
+          "name": "pietruszka",
+          "amount": 10.0,
+          "unit": "g",
+          "notes": "posiekana"
+        },
+        {
+          "name": "cytryna",
+          "amount": 1.0,
+          "unit": "szt",
+          "notes": "sok"
+        },
+        {
+          "name": "miód",
+          "amount": 10.0,
+          "unit": "g"
+        },
+        {
+          "name": "płatki chili",
+          "amount": 2.0,
+          "unit": "g"
+        },
+        {
+          "name": "sól",
+          "amount": 2.0,
+          "unit": "g"
+        },
+        {
+          "name": "czarny pieprz",
+          "amount": 1.0,
+          "unit": "g"
+        },
+        {
+          "name": "czosnek",
+          "amount": 2.0,
+          "unit": "goździki",
+          "notes": "posiekane"
+        }
+      ]
+    }
+  ],
+  "steps": [
+    {
+      "stepNumber": 1,
+      "title": "Wstępne gotowanie kurczaka",
+      "instruction": "W dużym garnku zagotuj 3 litry wody. Dodaj seler, ziarna czarnego pieprzu, główkę czosnku, sól, natkę pietruszki oraz zioła prowansalskie. Włóż całego kurczaka i gotuj go przez około 30 minut.",
+      "tip": "Gotowanie w aromatycznym wywarze sprawi, że mięso będzie niezwykle soczyste w środku."
+    },
+    {
+      "stepNumber": 2,
+      "title": "Przygotowanie masła ziołowego",
+      "instruction": "W miseczce wymieszaj miękkie masło z posiekaną pietruszką, przeciśniętym czosnkiem, ostrą papryką, solą oraz czarnym pieprzem, tworząc jednolitą pastę.",
+      "tip": "Masło powinno być w temperaturze pokojowej, aby łatwo się rozprowadzało."
+    },
+    {
+      "stepNumber": 3,
+      "title": "Przygotowanie warzyw",
+      "instruction": "Ziemniaki, marchewkę i cebulę obierz oraz pokrój na mniejsze kawałki. Wymieszaj je w misce z olejem, płatkami chili, solą oraz czarnym pieprzem.",
+      "tip": "Warzywa równomiernie otoczone olejem i przyprawami lepiej się upieką."
+    },
+    {
+      "stepNumber": 4,
+      "title": "Formowanie i pieczenie",
+      "instruction": "Wyjmij kurczaka z wywaru, natrzyj go przygotowanym masłem czosnkowym z każdej strony. Umieść kurczaka w naczyniu żaroodpornym wraz z przygotowanymi warzywami i piecz w piekarniku nagrzanym do 190°C przez około 45-60 minut, aż skórka będzie złocista i chrupiąca.",
+      "tip": "Co jakiś czas możeszpolewać kurczaka wytapiającym się masłem."
+    },
+    {
+      "stepNumber": 5,
+      "title": "Przygotowanie sosu i podanie",
+      "instruction": "W misce wymieszaj jogurt, posiekaną natkę pietruszki, sok z cytryny, miód, płatki chili, sól, pieprz, posiekany czosnek oraz pokrojone ogórki. Podawaj upieczonego kurczaka i warzywa z przygotowanym sosem.",
+      "tip": "Sos świetnie orzeźwi maślanego, pieczonego kurczaka."
+    }
+  ],
+  "chefTips": [
+    "Przed pieczeniem upewnij się, że masło dotarło pod skórkę kurczaka, co zapewni największą soczystość piersi.",
+    "Warzywa pieczone obok kurczaka przejmą jego wyjątkowy smak."
+  ],
+  "sourceUrl": "https://www.facebook.com/share/v/1AF4gLRuuX/",
+  "sourceDomain": "facebook.com",
+  "originalLanguage": "pl",
+  "createdAt": "2026-11-13T17:40:30.185Z",
+  "images": [
+    {
+      "url": "/images/recipes/soczysty-kurczak-pieczony-z-warzywami-i-maslem-czosnkowym-main.jpg",
+      "caption": "Soczysty kurczak pieczony z warzywami",
+      "isMain": true
+    }
+  ]
+}
