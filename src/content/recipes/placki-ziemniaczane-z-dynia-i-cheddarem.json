@@ -1,0 +1,122 @@
+{
+  "id": "placki-ziemniaczane-z-dynia-i-cheddarem",
+  "slug": "placki-ziemniaczane-z-dynia-i-cheddarem",
+  "title": "Placki ziemniaczane z dynią i cheddarem",
+  "summary": "Chrupiące z zewnątrz, delikatne w środku i cudownie złociste placki ziemniaczane z dodatkiem dyni i sera cheddar.",
+  "category": "Dania główne",
+  "tags": [
+    "placki ziemniaczane",
+    "dynia",
+    "obiad",
+    "cheddar",
+    "jesienne przepisy"
+  ],
+  "prepTimeMinutes": 20,
+  "cookTimeMinutes": 15,
+  "totalTimeMinutes": 35,
+  "servings": 4.0,
+  "difficulty": "Łatwy",
+  "images": [
+    {
+      "url": "https://static.xx.fbcdn.net/rsrc.php/yH/r/ckVwrvbnQCI.webp",
+      "caption": "Placki ziemniaczane z dynią",
+      "isMain": true
+    }
+  ],
+  "videos": [],
+  "ingredientGroups": [
+    {
+      "groupName": "Składniki główne",
+      "items": [
+        {
+          "name": "dynia Hokkaido",
+          "amount": 400.0,
+          "unit": "g",
+          "notes": "starta na tarce"
+        },
+        {
+          "name": "ziemniaki",
+          "amount": 700.0,
+          "unit": "g",
+          "notes": "startie i dobrze odciśnięte z wody"
+        },
+        {
+          "name": "jajka",
+          "amount": 3.0,
+          "unit": "szt.",
+          "notes": "małe"
+        },
+        {
+          "name": "mąka pszenna",
+          "amount": 4.0,
+          "unit": "łyżki"
+        },
+        {
+          "name": "mąka ziemniaczana",
+          "amount": 3.0,
+          "unit": "łyżki"
+        },
+        {
+          "name": "ser cheddar",
+          "amount": 100.0,
+          "unit": "g",
+          "notes": "starty"
+        },
+        {
+          "name": "szalotka",
+          "amount": 1.0,
+          "unit": "szt.",
+          "notes": "posiekana"
+        },
+        {
+          "name": "czosnek",
+          "amount": 2.0,
+          "unit": "ząbki",
+          "notes": "przeciśnięte przez praskę"
+        },
+        {
+          "name": "sól",
+          "notes": "do smaku"
+        },
+        {
+          "name": "pieprz",
+          "notes": "do smaku"
+        },
+        {
+          "name": "olej do smażenia"
+        }
+      ]
+    }
+  ],
+  "steps": [
+    {
+      "stepNumber": 1,
+      "title": "Przygotowanie warzyw",
+      "instruction": "Dynię i obrane ziemniaki zetrzyj na tarce o grubych oczkach. Pamiętaj, aby starte ziemniaki bardzo dokładnie odcisnąć z nadmiaru wody.",
+      "tip": "Dokładne odciśnięcie ziemniaków to klucz do chrupkości placków."
+    },
+    {
+      "stepNumber": 2,
+      "title": "Łączenie składników",
+      "instruction": "Do miski z warzywami dodaj posiekaną szalotkę, przeciśnięty czosnek, jajka, mąkę pszenną, mąkę ziemniaczaną oraz starty cheddar. Dopraw solą oraz pieprzem, a następnie dokładnie wymieszaj całą masę."
+    },
+    {
+      "stepNumber": 3,
+      "title": "Smażenie",
+      "instruction": "Na patelni rozgrzej olej. Nakładaj porcje masy, formując niewielkie placki, i smaż je na średnim ogniu z obu stron na piękny, złocisty kolor.",
+      "tip": "Smaż na umiarkowanym ogniu, aby dynia i ziemniaki zdążyły zmięknąć w środku, zanim zowu zbrązowieją."
+    },
+    {
+      "stepNumber": 4,
+      "title": "Podanie",
+      "instruction": "Gotowe placki podawaj na ciepło, najlepiej w akompaniamencie ulubionego dipu czosnkowego."
+    }
+  ],
+  "chefTips": [
+    "Dla uzyskania jeszcze lepszej chrupkości możesz odsączyć gotowe placki na ręczniku papierowym po usmażeniu."
+  ],
+  "sourceUrl": "https://www.facebook.com/share/r/1E3y85LRky/",
+  "sourceDomain": "facebook.com",
+  "originalLanguage": "pl",
+  "createdAt": "2026-11-13T12:38:35.958Z"
+}
