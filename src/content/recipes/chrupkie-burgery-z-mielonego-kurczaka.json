@@ -1,0 +1,242 @@
+{
+  "id": "chrupkie-burgery-z-mielonego-kurczaka",
+  "slug": "chrupkie-burgery-z-mielonego-kurczaka",
+  "title": "Chrupkie burgery z mielonego kurczaka",
+  "summary": "Soczyste burgery z kurczaka w złocistej, chrupiącej panierce – pieczone, nie smażone.",
+  "category": "Dania główne",
+  "tags": [
+    "burger",
+    "kurczak",
+    "obiad",
+    "pieczone",
+    "fast food"
+  ],
+  "prepTimeMinutes": 20,
+  "cookTimeMinutes": 18,
+  "totalTimeMinutes": 38,
+  "servings": 5.0,
+  "difficulty": "Łatwy",
+  "images": [
+    {
+      "url": "https://simplehomeedit.com/wp-content/uploads/2026/10/Close-up-crispy-minced-chicken-burger-in-brioche-bun.webp",
+      "caption": "Chrupki burger z mielonego kurczaka w maślanej bułce brioche",
+      "isMain": true
+    },
+    {
+      "url": "https://simplehomeedit.com/wp-content/uploads/2026/10/Crispy-minced-chicken-burgers-served-on-platter-867x1300.webp",
+      "caption": "Chrupkie burgery z kurczaka podane na półmisku",
+      "isMain": false
+    },
+    {
+      "url": "https://simplehomeedit.com/wp-content/uploads/2026/10/Chicken-burger-patty-mixture-in-bowl-867x1300.webp",
+      "caption": "Masa na kotlety z kurczaka w misce",
+      "isMain": false
+    },
+    {
+      "url": "https://simplehomeedit.com/wp-content/uploads/2026/10/Crumbed-chicken-burger-patties-sprayed-with-olive-oil-before-baking-867x1300.webp",
+      "caption": "Kotlety w panierce spryskane oliwą przed pieczeniem",
+      "isMain": false
+    },
+    {
+      "url": "https://simplehomeedit.com/wp-content/uploads/2026/10/Crispy-minced-chicken-burger-served-in-brioche-bun-867x1300.webp",
+      "caption": "Gotowy burger z kurczaka z majonezem i sałatą",
+      "isMain": false
+    }
+  ],
+  "videos": [
+    {
+      "url": "https://www.youtube.com/watch?v=I3TyuVfYHkQ",
+      "platform": "youtube",
+      "embedUrl": "https://www.youtube-nocookie.com/embed/I3TyuVfYHkQ",
+      "title": "Przepis wideo na chrupkie burgery z kurczaka"
+    },
+    {
+      "url": "https://www.instagram.com/reel/DfiQCSDl_cd/",
+      "platform": "instagram",
+      "embedUrl": "https://www.instagram.com/reel/DfiQCSDl_cd/embed",
+      "title": "Przygotowanie burgerów na Instagramie"
+    },
+    {
+      "url": "https://www.instagram.com/reel/Dfg-DHQku07/",
+      "platform": "instagram",
+      "embedUrl": "https://www.instagram.com/reel/Dfg-DHQku07/embed",
+      "title": "Proces panierowania"
+    },
+    {
+      "url": "https://www.instagram.com/p/Dff4uR4kgS4/",
+      "platform": "instagram",
+      "embedUrl": "https://www.instagram.com/p/Dff4uR4kgS4/embed",
+      "title": "Prezentacja gotowego dania"
+    },
+    {
+      "url": "https://www.instagram.com/reel/DfdGh-dCX80/",
+      "platform": "instagram",
+      "embedUrl": "https://www.instagram.com/reel/DfdGh-dCX80/embed",
+      "title": "Składanie burgera"
+    }
+  ],
+  "ingredientGroups": [
+    {
+      "groupName": "Kotlety z kurczaka",
+      "items": [
+        {
+          "name": "mielone mięso z kurczaka",
+          "amount": 500.0,
+          "unit": "g",
+          "notes": "można zastąpić indykiem"
+        },
+        {
+          "name": "bułka tarta panko",
+          "amount": 30.0,
+          "unit": "g",
+          "notes": "lub zwykła bułka tarta"
+        },
+        {
+          "name": "parmezan",
+          "amount": 25.0,
+          "unit": "g",
+          "notes": "drobno starty"
+        },
+        {
+          "name": "jajko",
+          "amount": 1.0,
+          "unit": "szt."
+        },
+        {
+          "name": "mała cebula brązowa",
+          "amount": 0.25,
+          "unit": "szt.",
+          "notes": "drobno starta"
+        },
+        {
+          "name": "sos Worcestershire",
+          "amount": 1.0,
+          "unit": "łyżeczka"
+        },
+        {
+          "name": "czosnek w proszku",
+          "amount": 1.0,
+          "unit": "łyżeczka"
+        },
+        {
+          "name": "płatki soli morskiej",
+          "amount": 0.75,
+          "unit": "łyżeczka"
+        },
+        {
+          "name": "świeżo mielony czarny pieprz",
+          "amount": 0.5,
+          "unit": "łyżeczka"
+        }
+      ]
+    },
+    {
+      "groupName": "Chrupiąca panierka",
+      "items": [
+        {
+          "name": "bułka tarta panko",
+          "amount": 45.0,
+          "unit": "g"
+        },
+        {
+          "name": "parmezan",
+          "amount": 25.0,
+          "unit": "g",
+          "notes": "drobno starty"
+        },
+        {
+          "name": "słodka papryka",
+          "amount": 1.0,
+          "unit": "łyżeczka"
+        },
+        {
+          "name": "czosnek w proszku",
+          "amount": 0.5,
+          "unit": "łyżeczka"
+        },
+        {
+          "name": "płatki soli morskiej",
+          "amount": 0.25,
+          "unit": "łyżeczka"
+        },
+        {
+          "name": "oliwa z oliwek w sprayu",
+          "notes": "do spryskania"
+        }
+      ]
+    },
+    {
+      "groupName": "Do podania",
+      "items": [
+        {
+          "name": "bułki brioche",
+          "amount": 5.0,
+          "unit": "szt.",
+          "notes": "o wadze ok. 50 g każda"
+        },
+        {
+          "name": "majonez",
+          "amount": 60.0,
+          "unit": "g"
+        },
+        {
+          "name": "sałata rzymska mini",
+          "amount": 1.0,
+          "unit": "szt.",
+          "notes": "drobno poszatkowana"
+        }
+      ]
+    }
+  ],
+  "steps": [
+    {
+      "stepNumber": 1,
+      "title": "Rozgrzanie piekarnika",
+      "instruction": "Rozgrzej piekarnik do temperatury 220°C z termoobiegiem (lub 240°C bez termoobiegu). Pamiętaj, że dobre rozgrzanie piekarnika jest kluczowe dla uzyskania chrupkości.",
+      "tip": "Większość piekarników potrzebuje około 20 minut na porządne rozgrzanie."
+    },
+    {
+      "stepNumber": 2,
+      "title": "Przygotowanie masy mięsnej",
+      "instruction": "W dużej misce umieść wszystkie składniki na kotlety z kurczaka. Wymieszaj je delikatnie czystymi dłońmi tylko do połączenia składników.",
+      "tip": "Unikaj zbytniego wyrabiania mięsa, aby kotlety po upieczeniu pozostały soczyste i miękkie.",
+      "imageUrl": "https://simplehomeedit.com/wp-content/uploads/2026/10/Chicken-burger-patty-mixture-in-bowl-867x1300.webp"
+    },
+    {
+      "stepNumber": 3,
+      "title": "Formowanie kotletów",
+      "instruction": "Podziel masę mięsną na 5 równych części i uformuj z nich kotlety o grubości około 1.5 cm, nieco szersze niż bułki do burgerów. Masa jest miękka i lepka, co jest w pełni normalne.",
+      "tip": "Zwilż lekko dłonie wodą, aby ułatwić sobie formowanie kotletów bez dodawania dodatkowej bułki tartej."
+    },
+    {
+      "stepNumber": 4,
+      "title": "Przygotowanie panierki i panierowanie",
+      "instruction": "Na płaskim talerzu lub czystym blacie wymieszaj składniki panierki: bułkę panko, parmezan, słodką paprykę, czosnek w proszku oraz sól. Delikatnie wciśnij każdy kotlet w panierkę z obu stron.",
+      "tip": "Dociśnij panierkę lekko dłońmi, aby dobrze przylegała do mięsa.",
+      "imageUrl": "https://simplehomeedit.com/wp-content/uploads/2026/10/Crumbed-chicken-burger-patties-sprayed-with-olive-oil-before-baking-867x1300.webp"
+    },
+    {
+      "stepNumber": 5,
+      "title": "Pieczenie w piekarniku",
+      "instruction": "Ułóż kotlety bezpośrednio na nienastawionej papierem, lekko natłuszczonej metalowej blaszce do pieczenia. Obficie spryskaj je z góry oliwą z oliwek w sprayu i piecz przez około 15–18 minut, aż będą złociste i w pełni upieczone.",
+      "tip": "Użycie nienastawionej blaszki bez papieru do pieczenia gwarantuje idealnie chrupiący spód kotletów.",
+      "imageUrl": "https://simplehomeedit.com/wp-content/uploads/2026/10/Crispy-minced-chicken-burger-served-in-brioche-bun-867x1300.webp"
+    },
+    {
+      "stepNumber": 6,
+      "title": "Składanie burgerów",
+      "instruction": "Przekrój bułki brioche na pół i lekko je podgrzej. Posmaruj dolną i górną część majonezem, ułóż porcję poszatkowanej sałaty, a na niej chrupiącego kotleta z kurczaka. Przykryj górną bułką i podawaj od razu.",
+      "tip": "Możesz dodać ulubione dodatki, takie jak pikle czy krążki czerwonej cebuli.",
+      "imageUrl": "https://simplehomeedit.com/wp-content/uploads/2026/10/Close-up-crispy-minced-chicken-burger-in-brioche-bun.webp"
+    }
+  ],
+  "chefTips": [
+    "Starta cebula dodana do mięsa sprawia, że kotlety z kurczaka zachowują niesamowitą soczystość podczas pieczenia.",
+    "Surowe, uformowane i spankowane kotlety można trzymać w lodówce do 24 godzin przed planowanym pieczeniem.",
+    "Zamiast piekarnika możesz użyć frytkownicy beztłuszczowej (air fryer) – piecz w temperaturze 200°C przez około 12-14 minut."
+  ],
+  "sourceUrl": "https://simplehomeedit.com/recipe/crispy-minced-ground-chicken-burgers/?fbclid=IwZXh0bgNhZW0CMTEAcGRvZgNzcnRjBmFwcF9pZA80MDk5NjI2MjMwODU2MDkAAR9Mic0GtXibjwEV41qu_kFk-3ecUEjN2w_2QIAbO0tyOqJqEpaptgxCqEVIqg_aem_AIM1kHHAfCnqqjJR3iejHA",
+  "sourceDomain": "simplehomeedit.com",
+  "originalLanguage": "en",
+  "createdAt": "2026-11-13T08:53:31.003Z"
+}
