@@ -5,10 +5,14 @@
   "scripts": {
     "dev": "astro dev",
     "start": "astro dev",
+    "check": "astro check",
     "build": "astro check && astro build",
     "build:astro": "astro build",
     "preview": "astro preview",
-    "astro": "astro"
+    "astro": "astro",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:py": "python -m unittest discover -s scripts -p \"test_*.py\" -v"
   },
   "dependencies": {
     "@astrojs/check": "^0.9.4",
@@ -22,8 +26,13 @@
     "typescript": "^5.7.3"
   },
   "devDependencies": {
+    "@testing-library/jest-dom": "^7.0.1",
+    "@testing-library/react": "^16.3.3",
     "@types/node": "^26.6.6",
     "@types/react": "^19.0.10",
-    "@types/react-dom": "^19.0.4"
+    "@types/react-dom": "^19.0.4",
+    "@vitejs/plugin-react": "^4.4.1",
+    "jsdom": "^31.0.1",
+    "vitest": "^3.2.0"
   }
 }
