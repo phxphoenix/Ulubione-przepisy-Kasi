@@ -1,0 +1,155 @@
+{
+  "id": "turecki-borek-ze-szpinakiem-i-serem-feta",
+  "slug": "turecki-borek-ze-szpinakiem-i-serem-feta",
+  "title": "Turecki börek ze szpinakiem i serem feta",
+  "summary": "Chrupiący z zewnątrz i delikatny w środku tradycyjny turecki wypiek z ciasta yufka, wypełniony aromatycznym farszem ze świeżego szpinaku oraz wyrazistego sera feta.",
+  "category": "Sałatki i przekąski",
+  "tags": [
+    "börek",
+    "kuchnia turecka",
+    "szpinak",
+    "feta",
+    "przekąska",
+    "wypieki"
+  ],
+  "prepTimeMinutes": 20,
+  "cookTimeMinutes": 35,
+  "totalTimeMinutes": 55,
+  "servings": 6.0,
+  "difficulty": "Łatwy",
+  "videos": [],
+  "ingredientGroups": [
+    {
+      "groupName": "Ciasto i sos do przekładania",
+      "items": [
+        {
+          "name": "ciasto filo lub yufka",
+          "amount": 500.0,
+          "unit": "g",
+          "notes": "arkusze w temperaturze pokojowej"
+        },
+        {
+          "name": "mleko",
+          "amount": 200.0,
+          "unit": "ml"
+        },
+        {
+          "name": "oliwa z oliwek",
+          "amount": 80.0,
+          "unit": "ml"
+        },
+        {
+          "name": "jajka",
+          "amount": 2.0,
+          "unit": "szt.",
+          "notes": "jedno do sosu, jedno do posmarowania wierzchu"
+        },
+        {
+          "name": "jogurt naturalny gęsty",
+          "amount": 2.0,
+          "unit": "łyżki"
+        }
+      ]
+    },
+    {
+      "groupName": "Farsz",
+      "items": [
+        {
+          "name": "świeży szpinak",
+          "amount": 400.0,
+          "unit": "g",
+          "notes": "dokładnie umyty i osuszony"
+        },
+        {
+          "name": "ser feta",
+          "amount": 200.0,
+          "unit": "g",
+          "notes": "rozkruszony"
+        },
+        {
+          "name": "cebula",
+          "amount": 1.0,
+          "unit": "szt.",
+          "notes": "drobno posiekana"
+        },
+        {
+          "name": "oliwa z oliwek",
+          "amount": 1.0,
+          "unit": "łyżka",
+          "notes": "do podsmażenia cebuli"
+        },
+        {
+          "name": "sól i świeżo mielony czarny pieprz",
+          "notes": "do smaku"
+        },
+        {
+          "name": "gałka muszkatołowa",
+          "amount": 0.25,
+          "unit": "łyżeczki",
+          "notes": "świeżo starta"
+        }
+      ]
+    },
+    {
+      "groupName": "Do posypania",
+      "items": [
+        {
+          "name": "nasiona sezamu",
+          "amount": 1.0,
+          "unit": "łyżka"
+        },
+        {
+          "name": "czarnuszka",
+          "amount": 1.0,
+          "unit": "łyżeczka"
+        }
+      ]
+    }
+  ],
+  "steps": [
+    {
+      "stepNumber": 1,
+      "title": "Przygotowanie farszu",
+      "instruction": "Na patelni rozgrzej łyżkę oliwy i podsmaż posiekaną cebulę na średnim ogniu do zeszklenia. Dodaj posiekany szpinak i duś przez około 2-3 minuty, aż straci objętość. Zdejmij patelnię z ognia, odciśnij nadmiar płynu i odstaw do ostygnięcia. Następnie wymieszaj szpinak z rozkruszoną fetą, doprawiając pieprzem i gałką muszkatołową (z solą uważaj, gdyż feta jest słona).",
+      "tip": "Dokładne odsączenie szpinaku zapobiegnie namakaniu ciasta filo podczas pieczenia."
+    },
+    {
+      "stepNumber": 2,
+      "title": "Przygotowanie sosu nawilżającego",
+      "instruction": "W misce połącz 200 ml mleka, 80 ml oliwy, jogurt naturalny oraz 1 jajko. Całość roztrzep trzepaczką do uzyskania jednolitej emulsji."
+    },
+    {
+      "stepNumber": 3,
+      "title": "Układanie böreka",
+      "instruction": "Naczynie żaroodporne lub blaszkę posmaruj odrobiną oliwy. Ułóż pierwszy arkusz ciasta filo tak, aby jego brzegi lekko wystawały poza formę, i obficie posmaruj sosem. Połóż kolejny arkusz ciasta, ponownie posmaruj sosem, po czym wyłóż połowę farszu szpinakowego. Przykryj warstwą ciasta, zwilż sosem, rozłóż resztę farszu i przykryj pozostałymi arkuszami, każdą warstwę smarując sosem.",
+      "tip": "Arkusze filo szybko wysychają, dlatego trzymaj nieużywane ciasto pod wilgotną ściereczką."
+    },
+    {
+      "stepNumber": 4,
+      "title": "Krojenie i dekoracja",
+      "instruction": "Zawijając wystające brzegi do środka, ponacinaj wierzch böreka ostrym nożem na kwadraty lub romby. Rozmąć drugie jajko z pozostałością sosu i posmaruj wierzch. Posyp obficie sezamem oraz czarnuszką.",
+      "tip": "Nacięcie surowego ciasta ułatwia późniejsze krojenie upieczonego, kruchego wypieku."
+    },
+    {
+      "stepNumber": 5,
+      "title": "Pieczenie",
+      "instruction": "Wstaw börek do piekarnika nagrzanego do 180°C (grzanie góra-dół) i piecz przez około 35 minut, aż wierzch uzyska głęboki, złocisto-brązowy kolor, a ciasto stanie się chrupiące.",
+      "tip": "Po wyjęciu z pieca odczekaj 10 minut przed podaniem, aby farsz lekko stężał."
+    }
+  ],
+  "chefTips": [
+    "Dla urozmaicenia smaku możesz dodać do farszu odrobinę posiekanego świeżego koperku lub odrobinę tureckiego sera kaşar.",
+    "Börek świetnie smakuje zarówno na ciepło zaraz po upieczeniu, jak i na zimno jako przekąska do pracy lub szkoły."
+  ],
+  "sourceUrl": "https://m.facebook.com/igneylekuyukaziyorum/videos/tarif-yorumda/2150958985806798/",
+  "sourceDomain": "m.facebook.com",
+  "originalLanguage": "tr",
+  "createdAt": "2026-11-14T18:49:48.628Z",
+  "images": [
+    {
+      "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/3/37/Spanakopita.jpg/1280px-Spanakopita.jpg?utm_source=en.wikipedia.org&utm_campaign=api&utm_content=thumbnail",
+      "caption": "Turecki börek ze szpinakiem i serem feta (zdjęcie poglądowe)",
+      "isMain": true
+    }
+  ]
+}
