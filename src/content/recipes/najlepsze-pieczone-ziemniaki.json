@@ -1,0 +1,130 @@
+{
+  "id": "najlepsze-pieczone-ziemniaki",
+  "slug": "najlepsze-pieczone-ziemniaki",
+  "title": "Najlepsze pieczone ziemniaki",
+  "summary": "Niezwykle chrupiące z zewnątrz i puszyste jak chmurka w środku pieczone ziemniaki, przygotowane z prostym sekretem idealnej skórki.",
+  "category": "Dania główne",
+  "tags": [
+    "ziemniaki",
+    "pieczone",
+    "dodatek",
+    "wegetariańskie",
+    "chrupiące"
+  ],
+  "prepTimeMinutes": 10,
+  "cookTimeMinutes": 45,
+  "totalTimeMinutes": 55,
+  "servings": 4.0,
+  "difficulty": "Łatwy",
+  "videos": [
+    {
+      "url": "https://www.instagram.com/reel/Df05tLGDxk8/",
+      "platform": "instagram",
+      "embedUrl": "https://www.instagram.com/reel/Df05tLGDxk8/embed",
+      "title": "Przygotowanie chrupiących ziemniaków"
+    },
+    {
+      "url": "https://www.instagram.com/reel/DfvPDr4gp-h/",
+      "platform": "instagram",
+      "embedUrl": "https://www.instagram.com/reel/DfvPDr4gp-h/embed",
+      "title": "Pieczenie ziemniaków w piekarniku"
+    },
+    {
+      "url": "https://www.instagram.com/reel/DfiQCSDl_cd/",
+      "platform": "instagram",
+      "embedUrl": "https://www.instagram.com/reel/DfiQCSDl_cd/embed",
+      "title": "Sekretny składnik na chrupiącą skórkę"
+    },
+    {
+      "url": "https://www.instagram.com/reel/Dfg-DHQku07/",
+      "platform": "instagram",
+      "embedUrl": "https://www.instagram.com/reel/Dfg-DHQku07/embed",
+      "title": "Gotowe pieczone ziemniaki"
+    }
+  ],
+  "ingredientGroups": [
+    {
+      "groupName": "Składniki główne",
+      "items": [
+        {
+          "name": "ziemniaki",
+          "amount": 1.2,
+          "unit": "kg",
+          "notes": "dowolna odmiana, najlepiej białe, obrane"
+        },
+        {
+          "name": "oliwa z oliwek",
+          "amount": 125.0,
+          "unit": "ml",
+          "notes": "można zastąpić tłuszczem gęsim lub kaczym"
+        },
+        {
+          "name": "mąka pszenna",
+          "amount": 2.0,
+          "unit": "łyżeczki",
+          "notes": "klucz do uzyskania chrupiącej skórki"
+        },
+        {
+          "name": "płatki soli morskiej",
+          "amount": 1.0,
+          "unit": "łyżeczka",
+          "notes": "plus dodatkowo do podania"
+        }
+      ]
+    }
+  ],
+  "steps": [
+    {
+      "stepNumber": 1,
+      "title": "Rozgrzanie piekarnika i naczynia",
+      "instruction": "Rozgrzej piekarnik do temperatury 220°C (lub 200°C z termoobiegiem). Włóż do piekarnika dużą brytfannę lub naczynie do żaroodporne, aby dobrze się nagrzało. Naczynie musi być na tyle duże, aby ziemniaki mieściły się w jednej warstwie bez nakładania na siebie.",
+      "tip": "Użycie ciężkiego naczynia żeliwnego świetnie akumuluje ciepło i pomaga w uzyskaniu chrupiącej skórki."
+    },
+    {
+      "stepNumber": 2,
+      "title": "Przygotowanie ziemniaków",
+      "instruction": "Obierz ziemniaki ze skórki i pokrój je na ćwiartki. Mniejsze sztuki możesz zostawić w połówkach, a bardzo duże pokrój na ósemki, aby kawałki miały odpowiednią wielkość.",
+      "tip": "Krojenie ziemniaków na mniejsze kawałki zwiększa powierzchnię parowania i chrupania."
+    },
+    {
+      "stepNumber": 3,
+      "title": "Krótkie podgotowanie",
+      "instruction": "Umieść ziemniaki w dużym garnku i zalej zimną wodą, tak aby były ledwo przykryte. Postaw garnek na dużym ogniu. Gdy woda zacznie gwałtownie wrzeć, zmniejsz ogień i gotuj ziemniaki przez dokładnie 2 minuty.",
+      "tip": "Krótkie obgotowanie zmiękcza jedynie zewnętrzną warstwę ziemniaka, co pozwala na idealne puszczenie skrobi i uzyskanie chrupkości."
+    },
+    {
+      "stepNumber": 4,
+      "title": "Odsączenie i obtoczenie w mące",
+      "instruction": "Odcedź ziemniaki na durszlaku i potrząśnij nimi energicznie, aby obić ich brzegi. Przełóż z powrotem do garnka, posyp 2 łyżeczkami mąki pszennej i delikatnie wymieszaj, aby równomiernie pokryła powierzchnię ziemniaków.",
+      "tip": "Obijanie ziemniaków tworzy chropowatą strukturę, która po upieczeniu zamieni się w chrupiące grudki."
+    },
+    {
+      "stepNumber": 5,
+      "title": "Pieczenie ziemniaków",
+      "instruction": "Ostrożnie wyjmij gorącą brytfannę z piekarnika i wlej do niej oliwę z oliwek. Następnie ostrożnie wyłóż ziemniaki (oliwa może pryskać). Dokładnie obtocz ziemniaki w gorącym tłuszczu i posyp solą. Włóż naczynie do piekarnika i piecz przez 15 minut, po czym obróć je na drugą stronę i piecz kolejne 15 minut. Powtarzaj ten proces, aż ziemniaki będą złociste i bardzo chrupiące (całkowity czas pieczenia to około 45 minut).",
+      "tip": "Regularne obracanie ziemniaków zapewnia ich równomierne zrumienienie z każdej strony."
+    },
+    {
+      "stepNumber": 6,
+      "title": "Podanie",
+      "instruction": "Gotowe ziemniaki wyjmij z piekarnika, posyp dodatkową porcją płatków soli morskiej i podawaj od razu jako dodatek do dań głównych.",
+      "tip": "Najlepiej smakują tuż po wyjęciu z pieca, gdy skórka jest maksymalnie chrupiąca."
+    }
+  ],
+  "chefTips": [
+    "Dla uzyskania wyjątkowego, głębokiego smaku możesz zastąpić oliwę z oliwek tłuszczem gęsim lub kaczym.",
+    "Ziemniaki możesz przygotować wcześniej: obierz je i pokrój, a następnie zalej wodą w misce i schowaj do lodówki na maksymalnie 24 godziny (pamiętaj, aby nie dodawać soli do wody). Przed gotowaniem dokładnie je osusz ręcznikiem papierowym.",
+    "Resztki upieczonych ziemniaków można przechowywać w lodówce do 3 dni i odgrzać w piekarniku nagrzanym do 200°C przez 10-15 minut, aby odzyskały chrupkość."
+  ],
+  "sourceUrl": "https://simplehomeedit.com/recipe/the-best-roast-potatoes/?fbclid=IwZXh0bgNhZW0CMTEAcGRvZgNzcnRjBmFwcF9pZA80MDk5NjI2MjMwODU2MDkAAR-ETvC8aScMnpKfZNAqLQ-4GG7VXkE-iGpQt6Cn4HOKvOp5AVhUJipHydIQ4w_aem_Ydbbnr5zQzqeHoyBYRTwmQ",
+  "sourceDomain": "simplehomeedit.com",
+  "originalLanguage": "en",
+  "createdAt": "2026-11-17T13:09:38.865Z",
+  "images": [
+    {
+      "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/4/47/Kr%C3%A4uter_f%C3%BCr_Karoffn.jpg/1280px-Kr%C3%A4uter_f%C3%BCr_Karoffn.jpg?utm_source=pl.wikipedia.org&utm_campaign=api&utm_content=thumbnail",
+      "caption": "Najlepsze pieczone ziemniaki (zdjęcie poglądowe)",
+      "isMain": true
+    }
+  ]
+}
