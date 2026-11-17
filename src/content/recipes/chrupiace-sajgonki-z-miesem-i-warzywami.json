@@ -1,0 +1,242 @@
+{
+  "id": "chrupiace-sajgonki-z-miesem-i-warzywami",
+  "slug": "chrupiace-sajgonki-z-miesem-i-warzywami",
+  "title": "Chrupiące sajgonki z mięsem i warzywami",
+  "summary": "Klasyczne wietnamskie sajgonki w papierze ryżowym z aromatycznym farszem z mięsa mielonego, warzyw, grzybów mun i makaronu ryżowego. Podawane z wyrazistym, słodko-kwaśnym sosem domowej roboty.",
+  "category": "Dania główne",
+  "tags": [
+    "sajgonki",
+    "kuchnia azjatycka",
+    "kuchnia wietnamska",
+    "danie z mięsem",
+    "przekąska na ciepło"
+  ],
+  "prepTimeMinutes": 45,
+  "cookTimeMinutes": 30,
+  "totalTimeMinutes": 180,
+  "servings": 16.0,
+  "difficulty": "Średni",
+  "videos": [],
+  "ingredientGroups": [
+    {
+      "groupName": "Farsz i ciasto",
+      "items": [
+        {
+          "name": "papier ryżowy",
+          "amount": 16.0,
+          "unit": "szt.",
+          "notes": "okrągłe arkusze, łącznie ok. 140 g"
+        },
+        {
+          "name": "mięso mielone",
+          "amount": 350.0,
+          "unit": "g",
+          "notes": "wołowina, wieprzowina lub mieszanka"
+        },
+        {
+          "name": "cienki makaron ryżowy",
+          "amount": 60.0,
+          "unit": "g",
+          "notes": "waga przed ugotowaniem"
+        },
+        {
+          "name": "suszone grzyby mun",
+          "amount": 10.0,
+          "unit": "g",
+          "notes": "po namoczeniu ok. 60 g"
+        },
+        {
+          "name": "marchew",
+          "amount": 1.0,
+          "unit": "szt.",
+          "notes": "ok. 100 g, starta na grubych oczkach"
+        },
+        {
+          "name": "cebula",
+          "amount": 1.0,
+          "unit": "szt.",
+          "notes": "ok. 100 g, drobno posiekana"
+        },
+        {
+          "name": "świeży imbir",
+          "amount": 20.0,
+          "unit": "g",
+          "notes": "starty na tarce"
+        },
+        {
+          "name": "czosnek",
+          "amount": 2.0,
+          "unit": "ząbki",
+          "notes": "przeciśnięty przez praskę"
+        },
+        {
+          "name": "sos sojowy",
+          "amount": 2.0,
+          "unit": "łyżki"
+        },
+        {
+          "name": "sos rybny",
+          "amount": 2.0,
+          "unit": "łyżki"
+        },
+        {
+          "name": "kolendra lub natka pietruszki",
+          "amount": 1.0,
+          "unit": "garść",
+          "notes": "drobno posiekana"
+        },
+        {
+          "name": "szczypiorek",
+          "amount": 0.5,
+          "unit": "garści",
+          "notes": "posiekany"
+        },
+        {
+          "name": "świeża mięta",
+          "amount": 0.5,
+          "unit": "garści",
+          "notes": "posiekane listki"
+        },
+        {
+          "name": "jajko",
+          "amount": 1.0,
+          "unit": "szt.",
+          "notes": "opcjonalnie, do scalenia przestudzonego farszu"
+        },
+        {
+          "name": "olej do podsmażenia farszu",
+          "amount": 2.0,
+          "unit": "łyżki"
+        },
+        {
+          "name": "olej do głębokiego smażenia",
+          "amount": 250.0,
+          "unit": "ml",
+          "notes": "do smażenia sajgonek na patelni"
+        }
+      ]
+    },
+    {
+      "groupName": "Sos do sajgonek",
+      "items": [
+        {
+          "name": "gorąca woda",
+          "amount": 3.0,
+          "unit": "łyżki",
+          "notes": "wrzątek ułatwiający rozpuszczenie cukru"
+        },
+        {
+          "name": "drobny cukier",
+          "amount": 3.0,
+          "unit": "łyżki",
+          "notes": "czubate, ok. 50 g (można użyć cukru pudru)"
+        },
+        {
+          "name": "sok ze świeżej limonki",
+          "amount": 3.0,
+          "unit": "łyżki",
+          "notes": "lub 2 łyżki soku z limonki i 1 łyżka octu ryżowego"
+        },
+        {
+          "name": "sos sojowy",
+          "amount": 2.0,
+          "unit": "łyżki"
+        },
+        {
+          "name": "papryczka chili",
+          "amount": 1.0,
+          "unit": "szt.",
+          "notes": "oczyszczona z nasion i drobno posiekana"
+        },
+        {
+          "name": "czosnek",
+          "amount": 1.0,
+          "unit": "ząbek",
+          "notes": "przeciśnięty przez praskę"
+        }
+      ]
+    }
+  ],
+  "steps": [
+    {
+      "stepNumber": 1,
+      "title": "Przygotowanie dodatków",
+      "instruction": "Suszone grzyby mun umieść w naczyniu, zalej wrzątkiem, przykryj i odstaw na 20 minut, aby napęczniały. Po tym czasie dokładnie je odcedź i drobno posiekaj. Makaron ryżowy ugotuj zgodnie z instrukcją na opakowaniu, odcedź i posiekaj na mniejsze kawałki.",
+      "tip": "Dobrze posiekany makaron i grzyby ułatwią późniejsze ciasne formowanie ruloników."
+    },
+    {
+      "stepNumber": 2,
+      "title": "Podsmażenie warzyw i mięsa",
+      "instruction": "Na dużej patelni z grubym dnem rozgrzej 2 łyżki oleju. Dodaj posiekaną cebulę i smaż na umiarkowanym ogniu przez około 5 minut. Dodaj startą marchewkę i smaż kolejne 5 minut. Następnie dołóż mięso mielone i podsmażaj przez 5-7 minut, starannie rozdrabniając grudki drewnianą łopatką.",
+      "imageUrl": "https://cdn.aniagotuje.com/pictures/articles/2022/01/24200925-v-1080x1351.jpg"
+    },
+    {
+      "stepNumber": 3,
+      "title": "Doprawienie i duszenie farszu",
+      "instruction": "Do mięsa dodaj starty imbir, przeciśnięte przez praskę 2 ząbki czosnku, posiekane grzyby mun, makaron ryżowy oraz sos sojowy i sos rybny. Dokładnie wymieszaj i podsmażaj całość na małym ogniu przez około 10 minut. Na koniec wmieszaj posiekany szczypiorek, miętę oraz kolendrę lub natkę pietruszki. Zdejmij patelnię z ognia i pozostaw farsz do całkowitego ostudzenia.",
+      "tip": "Do całkowicie ostudzonego farszu możesz wbić 1 jajko, co pomoże scalić nadzienie podczas zawijania.",
+      "imageUrl": "https://cdn.aniagotuje.com/pictures/articles/2022/01/24200938-v-1080x1368.jpg"
+    },
+    {
+      "stepNumber": 4,
+      "title": "Zwijanie sajgonek",
+      "instruction": "Przygotuj szeroką miskę z ciepłą (nie wrzącą) wodą. Pojedynczo zanurzaj arkusze papieru ryżowego na kilka sekund, aż staną się elastyczne. Wyłóż arkusz na lekko wilgotną deskę, nałóż na środek około 2 łyżki farszu, zawiń boki do środka, a następnie zroluj całość ciasno ku górze, formując zwięzły wałeczek.",
+      "tip": "Odkładaj zwinięte sajgonki na natłuszczoną deskę tak, aby nie stykały się ze sobą, inaczej delikatny papier ryżowy natychmiast się poskleja.",
+      "imageUrl": "https://cdn.aniagotuje.com/pictures/articles/2022/01/24200990-v-1080x1513.jpg"
+    },
+    {
+      "stepNumber": 5,
+      "title": "Smażenie sajgonek",
+      "instruction": "Na szerokiej patelni rozgrzej około 250 ml oleju do temperatury około 175°C. Wkładaj sajgonki partiami, zachowując odstępy między sztukami. Smaż przez około 1,5 do 2 minut z każdej strony, aż papier ryżowy lekko stwardnieje i apetycznie się zarumieni. Odsączaj na papierowym ręczniku lub natłuszczonej desce.",
+      "tip": "Dla uzyskania maksymalnej chrupkości sajgonki można usmażyć dwukrotnie: krótko obsmażyć wstępnie, a tuż przed podaniem wrzucić na mocno rozgrzany tłuszcz na kolejne 1-2 minuty.",
+      "imageUrl": "https://cdn.aniagotuje.com/pictures/articles/2022/01/24201029-v-1080x1440.jpg"
+    },
+    {
+      "stepNumber": 6,
+      "title": "Przygotowanie sosu i podanie",
+      "instruction": "W miseczce połącz gorącą wodę z cukrem i mieszaj do pełnego rozpuszczenia. Wlej sok z limonki i sos sojowy, po czym dodaj drobno posiekaną papryczkę chili oraz przeciśnięty przez praskę ząbek czosnku. Sajgonki podawaj na ciepło z miseczką aromatycznego sosu do maczania.",
+      "imageUrl": "https://cdn.aniagotuje.com/pictures/articles/2022/01/24201055-v-1080x1429.jpg"
+    }
+  ],
+  "chefTips": [
+    "Nie używaj wrzątku do namaczania papieru ryżowego – zbyt gorąca woda sprawi, że papier stanie się lepki, wiotki i będzie rwał się podczas zwijania.",
+    "W wersji wegetariańskiej mięso mielone z powodzeniem zastąpisz drobno posiekanymi grzybami shiitake lub boczniakami (ok. 500 g), ewentualnie odciśniętą, posiekaną kapustą kiszoną.",
+    "Zarówno farsz, jak i sos możesz przygotować dzień wcześniej i przechowywać pod przykryciem w lodówce."
+  ],
+  "sourceUrl": "https://aniagotuje.pl/przepis/sajgonki",
+  "sourceDomain": "aniagotuje.pl",
+  "originalLanguage": "pl",
+  "createdAt": "2026-11-17T08:11:51.463Z",
+  "images": [
+    {
+      "url": "https://cdn.aniagotuje.com/pictures/articles/2022/01/24192231-v-1500x1500.jpg",
+      "caption": "Chrupiące sajgonki z sosem",
+      "isMain": true
+    },
+    {
+      "url": "https://cdn.aniagotuje.com/pictures/articles/2022/01/24200925-v-1080x1351.jpg",
+      "caption": "Smażenie cebuli, marchwi i mięsa mielonego na patelni",
+      "isMain": false
+    },
+    {
+      "url": "https://cdn.aniagotuje.com/pictures/articles/2022/01/24200938-v-1080x1368.jpg",
+      "caption": "Dodawanie namoczonych grzybów mun i makaronu ryżowego do farszu",
+      "isMain": false
+    },
+    {
+      "url": "https://cdn.aniagotuje.com/pictures/articles/2022/01/24200990-v-1080x1513.jpg",
+      "caption": "Układanie porcji farszu na namoczonym arkuszu papieru ryżowego",
+      "isMain": false
+    },
+    {
+      "url": "https://cdn.aniagotuje.com/pictures/articles/2022/01/24201029-v-1080x1440.jpg",
+      "caption": "Smażenie uformowanych sajgonek na patelni",
+      "isMain": false
+    },
+    {
+      "url": "https://cdn.aniagotuje.com/pictures/articles/2022/01/24201055-v-1080x1429.jpg",
+      "caption": "Gotowe, złociste sajgonki podane z pikantnym sosem",
+      "isMain": false
+    }
+  ]
+}
