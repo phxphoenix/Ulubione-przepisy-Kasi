@@ -16,14 +16,7 @@
   "totalTimeMinutes": 55,
   "servings": 4.0,
   "difficulty": "Łatwy",
-  "videos": [
-    {
-      "url": "https://www.instagram.com/reel/Df05tLGDxk8/",
-      "platform": "instagram",
-      "embedUrl": "https://www.instagram.com/reel/Df05tLGDxk8/embed",
-      "title": "Najlepsze pieczone ziemniaki"
-    }
-  ],
+  "videos": [],
   "ingredientGroups": [
     {
       "groupName": "Składniki główne",
