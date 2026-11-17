@@ -1,0 +1,169 @@
+{
+  "id": "chrupiace-sajgonki-w-papierze-ryzowym-z-sezamem-i-tofu",
+  "slug": "chrupiace-sajgonki-w-papierze-ryzowym-z-sezamem-i-tofu",
+  "title": "Chrupiące sajgonki w papierze ryżowym z sezamem i tofu",
+  "summary": "Chrupiące na zewnątrz i delikatnie ciągnące w środku roladki z papieru ryżowego, wypełnione tofu, ryżem i warzywami, obtoczone w prażonym sezamie. Inspirowane kulinarnym trendem, idealne na lekką przekąskę lub lunch.",
+  "category": "Sałatki i przekąski",
+  "tags": [
+    "papier ryżowy",
+    "tofu",
+    "przekąska",
+    "kuchnia azjatycka",
+    "wegańskie",
+    "sezam"
+  ],
+  "prepTimeMinutes": 20,
+  "cookTimeMinutes": 10,
+  "totalTimeMinutes": 30,
+  "servings": 8.0,
+  "difficulty": "Łatwy",
+  "videos": [],
+  "ingredientGroups": [
+    {
+      "groupName": "Nadzienie",
+      "items": [
+        {
+          "name": "tofu naturalne twarde (extra-firm)",
+          "amount": 200.0,
+          "unit": "g",
+          "notes": "starte na grubej tarce lub drobno poszarpane"
+        },
+        {
+          "name": "sos sojowy",
+          "amount": 1.5,
+          "unit": "łyżki",
+          "notes": "klasyczny lub o obniżonej zawartości soli"
+        },
+        {
+          "name": "olej roślinny",
+          "amount": 1.0,
+          "unit": "łyżka",
+          "notes": "do podsmażenia tofu"
+        },
+        {
+          "name": "ugotowany biały ryż",
+          "amount": 170.0,
+          "unit": "g",
+          "notes": "np. ryż do sushi lub jaśminowy"
+        },
+        {
+          "name": "marchew",
+          "amount": 1.0,
+          "unit": "szt.",
+          "notes": "duża, obrana i pokrojona w cienkie słupki (julienne)"
+        },
+        {
+          "name": "ogórek",
+          "amount": 1.0,
+          "unit": "szt.",
+          "notes": "gruntowy lub 1/2 ogórka szklarniowego, pokrojony w cienkie słupki"
+        },
+        {
+          "name": "majonez roślinny",
+          "notes": "do smaku (opcjonalnie)"
+        },
+        {
+          "name": "sos teriyaki",
+          "notes": "do smaku (opcjonalnie)"
+        }
+      ]
+    },
+    {
+      "groupName": "Zawijanie i panierowanie",
+      "items": [
+        {
+          "name": "papier ryżowy",
+          "amount": 8.0,
+          "unit": "szt.",
+          "notes": "okrągłe arkusze"
+        },
+        {
+          "name": "chrupki z wodorostów nori (seaweed snacks)",
+          "amount": 16.0,
+          "unit": "szt.",
+          "notes": "małe prażone arkusze"
+        },
+        {
+          "name": "nasiona sezamu",
+          "amount": 2.0,
+          "unit": "łyżki",
+          "notes": "mieszanka białego i czarnego sezamu (ok. 18 g)"
+        }
+      ]
+    },
+    {
+      "groupName": "Smażenie i podanie",
+      "items": [
+        {
+          "name": "olej roślinny",
+          "amount": 2.0,
+          "unit": "łyżki",
+          "notes": "do smażenia na patelni"
+        },
+        {
+          "name": "sos sojowy",
+          "notes": "do maczania"
+        }
+      ]
+    }
+  ],
+  "steps": [
+    {
+      "stepNumber": 1,
+      "title": "Podsmażenie tofu",
+      "instruction": "Na patelni z nieprzywierającą powłoką rozgrzej 1 łyżkę oleju roślinnego na średnio-wysokim ogniu. Dodaj poszarpane tofu i smaż przez około 3–4 minuty, od czasu do czasu mieszając, aż miejscami lekko się zarumieni. Wlej 1,5 łyżki sosu sojowego i smaż jeszcze przez 2 minuty. Zdejmij z ognia i odstaw do przestudzenia.",
+      "tip": "Starte na tarce tofu o wiele lepiej absorbuje sos sojowy i szybciej staje się chrupiące niż krojone w tradycyjną kostkę."
+    },
+    {
+      "stepNumber": 2,
+      "title": "Przygotowanie warzyw i bazy",
+      "instruction": "Upewnij się, że ryż jest ugotowany i ostudzony. Marchewkę oraz ogórka pokrój w bardzo cienkie słupki (julienne). Przygotuj na blacie arkusze papieru ryżowego, nori, majonez oraz sos teriyaki.",
+      "tip": "Cienko pokrojone warzywa nie przebiją delikatnego papieru ryżowego podczas zwijania."
+    },
+    {
+      "stepNumber": 3,
+      "title": "Namaczanie papieru ryżowego",
+      "instruction": "Do płaskiego naczynia lub talerza wlej letnią wodę. Zanurz jeden arkusz papieru ryżowego na około 15–20 sekund – powinien lekko zmięknąć, ale nadal trzymać swój kształt. Przełóż go ostrożnie na duży, płaski talerz lub deskę.",
+      "tip": "Nie mocz papieru ryżowego zbyt długo, ponieważ po wyjęciu z wody zmięknie jeszcze bardziej i może się rwać."
+    },
+    {
+      "stepNumber": 4,
+      "title": "Nadziewanie i zwijanie",
+      "instruction": "Na środku arkusza ułóż jeden listek nori. Na nim połóż porcję podsmażonego tofu, 1–2 łyżki ryżu, słupki marchewki i ogórka, a następnie skrop odrobiną majonezu i sosu teriyaki. Przykryj drugim listkiem nori. Zawiń boki papieru ryżowego do środka, a następnie ciasno zroluj całość w zgrabny rulon."
+    },
+    {
+      "stepNumber": 5,
+      "title": "Panierowanie w sezamie",
+      "instruction": "Wysyp ziarna białego i czarnego sezamu na mały talerzyk. Obtocz przygotowaną roladkę w sezamie ze wszystkich stron, lekko dociskając ziarna do wilgotnego papieru. Powtórz czynność z pozostałymi 7 roladkami.",
+      "tip": "Papier ryżowy jest naturalnie kleisty, więc sezam bez problemu przylgnie bez użycia jajka czy panierki."
+    },
+    {
+      "stepNumber": 6,
+      "title": "Smażenie rolapek",
+      "instruction": "Na dużej patelni rozgrzej 1–2 łyżki oleju na średnim ogniu. Układaj partiami roladki (tak, aby się ze sobą nie stykały) i smaż po 1–2 minuty z każdej strony, obracając, aż sezamowa skorupka stanie się złocista i chrupiąca. Usmażone roladki odsącz z nadmiaru tłuszczu na ręczniku papierowym.",
+      "tip": "Roladki z papieru ryżowego łatwo się sklejają na gorącej patelni – zachowaj między nimi odstęp podczas smażenia."
+    },
+    {
+      "stepNumber": 7,
+      "title": "Podanie",
+      "instruction": "Roladki podawaj na ciepło od razu po przygotowaniu, serwując je z sosem sojowym do maczania. Przed podaniem możesz posypać je dodatkową szczyptą sezamu."
+    }
+  ],
+  "chefTips": [
+    "Danie najlepiej smakuje bezpośrednio po usmażeniu – wtedy sezamowa skorupka jest najbardziej chrupiąca, a papier ryżowy zachowuje elastyczną strukturę.",
+    "Składniki nadzienia (ugotowany ryż, tofu, pokrojone warzywa) możesz przygotować z wyprzedzeniem i przechować w lodówce do 24 godzin.",
+    "Zamiast sosu teriyaki możesz użyć sosu hoisin, pikantnego majonezu sriracha lub słodkiego sosu chili.",
+    "Nie zaleca się pieczenia tych rolapek w piekarniku – smażenie na patelni jest kluczowe dla uzyskania idealnej chrupkości."
+  ],
+  "sourceUrl": "https://glow-diaries.com/sesame-rice-paper-rolls/",
+  "sourceDomain": "glow-diaries.com",
+  "originalLanguage": "en",
+  "createdAt": "2026-11-17T12:40:29.500Z",
+  "images": [
+    {
+      "url": "https://glow-diaries.com/wp-content/uploads/2024/06/Sesame-Rice-Paper-Rolls-Featured.jpg",
+      "caption": "Chrupiące smażone roladki z papieru ryżowego w panierce z sezamu",
+      "isMain": true
+    }
+  ]
+}
