@@ -171,21 +171,50 @@ Zasady redakcyjne (PRZESTRZEGAJ ICH BEZWZGLĘDNIE):
    - Jeśli w danych wejściowych podano listę kandydatów zdjęć, wybierz z niej najlepsze zdjęcie główne potrawy (`isMain: true` — dokładnie jedno zdjęcie główne) oraz opcjonalnie 1–5 dodatkowych zdjęć etapowych/prezentacyjnych (`isMain: false`) wraz z polskim opisem `caption`. Jeśli wybrane zdjęcie etapowe wyraźnie ilustruje konkretny krok, przypisz jego URL do pola `imageUrl` tego kroku. Pole `imageSearchQueries` pozostaw puste `[]`.
    - Jeśli w danych wejściowych NIE wykryto żadnych kandydatów zdjęć (`Brak wykrytych zdjęć`), pozostaw tablicę `images` pustą `[]`, a w polu `imageSearchQueries` podaj 3–4 zwięzłe zapytania do wyszukiwarki zdjęć dopasowane do nazwy potrawy: najpierw dokładna polska nazwa potrawy z tytułu, następnie dokładne angielskie tłumaczenie nazwy potrawy, a na końcu prostsza klasyczna nazwa dania po polsku i po angielsku (np. `["Placki ziemniaczane z dynią i cheddarem", "Pumpkin potato pancakes with cheddar", "Placki ziemniaczane", "Potato pancakes"]`).
    NIGDY nie wymyślaj adresów URL grafik — korzystaj wyłącznie z kandydatów z danych wejściowych.
-8. Wideo: Jeśli w danych wejściowych wykryto linki wideo (YouTube, Instagram, TikTok, MP4), umieść je w tablicy `videos` i skonstruuj dla nich poprawne adresy `embedUrl`, aby działały bezpośrednio na stronie:
-   - YouTube: `https://www.youtube-nocookie.com/embed/ID_FILMU`
-   - Instagram: `https://www.instagram.com/{p|reel|tv}/KOD/embed`
-   - TikTok: `https://www.tiktok.com/embed/v2/ID_FILMU`
-   - MP4: bezpośredni adres URL pliku `.mp4`
-   NIGDY nie wymyślaj linków wideo, jeśli nie zostały wykryte w danych wejściowych.
+8. Wideo:
+   - Do tablicy `videos` dodawaj WYŁĄCZNIE materiały wideo pochodzące z tej konkretnej strony, które bezpośrednio dotyczą przygotowania opisywanego dania (preferuj kandydatów oznaczonych jako osadzone w przepisie lub JSON-LD).
+   - BEZWZGLĘDNIE pomijaj linki z widgetów społecznościowych (np. karuzela ostatnich postów na Instagramie, polecane/inne przepisy, profile autora) oraz linki bez tytułu i kontekstu potwierdzającego, że dotyczą właśnie tego przepisu. W razie wątpliwości lepiej zostawić `videos: []`, niż dodać niezwiązany film.
+   - Skonstruuj dla wybranych filmów poprawne adresy `embedUrl`, aby działały bezpośrednio na stronie:
+     - YouTube: `https://www.youtube-nocookie.com/embed/ID_FILMU`
+     - Instagram: `https://www.instagram.com/{p|reel|tv}/KOD/embed`
+     - TikTok: `https://www.tiktok.com/embed/v2/ID_FILMU`
+     - MP4: bezpośredni adres URL pliku `.mp4`
+   - NIGDY nie wymyślaj linków wideo ani NIE zmyślaj tytułów (`title`) opisujących etapy przepisu dla filmów, których treść lub tytuł nie wynika z danych wejściowych (jeśli brak opisu w danych wejściowych, ustaw `title` na `null`).
 """
 
 NOISE_ANCESTOR_TAGS = frozenset({"nav", "footer", "aside"})
 NOISE_ATTR_RE = re.compile(
     r"(?:^|[\s_-])(sidebar|comment|comments|avatar|gravatar|author-bio|"
-    r"related-posts|newsletter|social-share|share-buttons|cookie|popup|modal|"
+    r"author-box|author-card|author-widget|related-posts|related-recipes|"
+    r"related-videos|more-recipes|recommended-posts|recommended-recipes|"
+    r"newsletter|social-share|share-buttons|social-feed|social-widget|"
+    r"social-links|social-icons|social-bar|follow-us|sbi|sb[-_]?instagram|"
+    r"instagram[-_]?(?:feed|gallery|widget|grid)|widget|cookie|popup|modal|"
     r"advert|advertisement|ad-container|sponsored|promo-banner)(?:$|[\s_-])",
     re.IGNORECASE,
 )
+HIGH_TRUST_VIDEO_SOURCES = frozenset(
+    {
+        "jsonld_recipe",
+        "jsonld_graph",
+        "iframe",
+        "video-tag",
+        "video-source",
+        "instagram-blockquote",
+        "tiktok-blockquote",
+    }
+)
+GENERIC_VIDEO_LINK_TEXT_RE = re.compile(
+    r"^(?:instagram|tiktok|youtube|youtu\.be|reel|reels|video|wideo|"
+    r"play(?:\s+video)?|watch(?:\s+(?:now|here|video|on\s+\w+))?|"
+    r"view(?:\s+(?:post|reel|video|on\s+\w+))?|follow(?:\s+us)?|"
+    r"obserwuj|zobacz|kliknij(?:\s+tutaj)?|link)$",
+    re.IGNORECASE,
+)
+MARKDOWN_IMAGE_LINK_RE = re.compile(
+    r"\[!\[[^\]]*\]\([^\)]+\)\]\((https?://[^\s)]+)\)"
+)
+MARKDOWN_TEXT_LINK_RE = re.compile(r"(?<!!)\[([^\]]+)\]\((https?://[^\s)]+)\)")
 IMAGE_NOISE_PATH_RE = re.compile(
     r"(?:^|[/_\-.])(avatar|gravatar|emoji|smilies|favicon|spinner|loader|"
     r"spacer|pixel|blank|placeholder|doubleclick|googlesyndication|"
@@ -267,7 +296,8 @@ class RecipeVideo(BaseModel):
         description="Poprawny adres URL do osadzenia w iframe lub tagu video.",
     )
     title: Optional[str] = Field(
-        default=None, description="Tytuł lub krótki opis wideo po polsku."
+        default=None,
+        description="Tytuł wideo po polsku wynikający z danych źródłowych lub null, jeśli brak opisu.",
     )
 
     @field_validator("url", "embedUrl")
@@ -1412,14 +1442,18 @@ def parse_html_document(
                     )
                 )
 
-    for anchor in article_root.find_all("a", href=True):
-        if _has_noise_ancestor(anchor, article_root):
-            continue
-        href = anchor.get("href")
-        if isinstance(href, str):
-            anchor_text = anchor.get_text(" ", strip=True)
+    if not any(v.source in HIGH_TRUST_VIDEO_SOURCES for v in videos):
+        for anchor in article_root.find_all("a", href=True):
+            if _has_noise_ancestor(anchor, article_root):
+                continue
+            href = anchor.get("href")
+            if not isinstance(href, str):
+                continue
+            anchor_text = re.sub(r"\s+", " ", anchor.get_text(" ", strip=True)).strip()
+            if not _is_descriptive_video_link_text(anchor_text):
+                continue
             cand = normalize_video_url(
-                href, base_url, title=anchor_text or None, source="article-link"
+                href, base_url, title=anchor_text, source="article-link"
             )
             if cand:
                 videos.append(cand)
@@ -1582,6 +1616,25 @@ def fetch_jina_markdown(url: str) -> Optional[str]:
     return text if text else None
 
 
+def _is_descriptive_video_link_text(text: Optional[str]) -> bool:
+    """Return True when link anchor text provides meaningful context rather than UI noise."""
+    if not text:
+        return False
+    cleaned = re.sub(r"\s+", " ", text).strip()
+    if len(cleaned) < 4:
+        return False
+    return not GENERIC_VIDEO_LINK_TEXT_RE.match(cleaned)
+
+
+def _select_prioritized_videos(candidates: Sequence[VideoCandidate]) -> list[VideoCandidate]:
+    """Deduplicate videos and suppress low-trust links when embedded/JSON-LD videos exist."""
+    deduped = _dedupe_videos(candidates)
+    high_trust = [v for v in deduped if v.source in HIGH_TRUST_VIDEO_SOURCES]
+    if high_trust:
+        return high_trust
+    return deduped
+
+
 def _extract_media_from_markdown(
     markdown_text: str, base_url: str, source_url: Optional[str] = None
 ) -> tuple[list[ImageCandidate], list[VideoCandidate]]:
@@ -1605,11 +1658,43 @@ def _extract_media_from_markdown(
                 )
             )
 
-    for raw_url in RAW_URL_RE.findall(markdown_text):
+    # Exclude image-wrapped links (e.g. Instagram feed thumbnail tiles) from video extraction.
+    handled_urls = {
+        raw_url.rstrip(".,;:!?") for raw_url in MARKDOWN_IMAGE_LINK_RE.findall(markdown_text)
+    }
+    scan_text = MARKDOWN_IMAGE_LINK_RE.sub(" ", markdown_text)
+    scan_text = MARKDOWN_IMAGE_RE.sub(" ", scan_text)
+
+    for raw_text, raw_url in MARKDOWN_TEXT_LINK_RE.findall(scan_text):
         cleaned = raw_url.rstrip(".,;:!?")
-        cand = normalize_video_url(cleaned, base_url, source="jina-markdown")
+        handled_urls.add(cleaned)
+        link_text = re.sub(r"\s+", " ", raw_text).strip()
+        if not _is_descriptive_video_link_text(link_text):
+            continue
+        cand = normalize_video_url(
+            cleaned, base_url, title=link_text, source="jina-markdown"
+        )
         if cand:
             videos.append(cand)
+
+    bare_candidates: list[VideoCandidate] = []
+    for raw_url in RAW_URL_RE.findall(scan_text):
+        cleaned = raw_url.rstrip(".,;:!?")
+        if cleaned in handled_urls:
+            continue
+        handled_urls.add(cleaned)
+        cand = normalize_video_url(cleaned, base_url, source="jina-markdown")
+        if cand:
+            bare_candidates.append(cand)
+
+    # Multiple bare Instagram/TikTok links without titles almost always come from a social feed widget.
+    bare_social_count = sum(
+        1 for cand in bare_candidates if cand.platform in {"instagram", "tiktok"}
+    )
+    for cand in bare_candidates:
+        if bare_social_count >= 2 and cand.platform in {"instagram", "tiktok"}:
+            continue
+        videos.append(cand)
 
     return images, videos
 
@@ -1661,7 +1746,7 @@ def collect_page_data(url: str) -> ExtractedPageData:
             videos.extend(jina_videos)
 
     deduped_images = _verify_image_candidates(_dedupe_images(images), referer=final_url)
-    deduped_videos = _dedupe_videos(videos)
+    deduped_videos = _select_prioritized_videos(videos)
 
     return ExtractedPageData(
         source_url=url,
@@ -1729,10 +1814,19 @@ def _format_media_prompt_sections(
         vid_lines = []
         for idx, vid in enumerate(vid_slice, start=1):
             title_info = f" | tytuł: {vid.title}" if vid.title else ""
-            vid_lines.append(
-                f"{idx}. [{vid.platform} | {vid.source}] url={vid.url} | embedUrl={vid.embed_url}{title_info}"
+            trust_label = (
+                "osadzone w przepisie"
+                if vid.source in HIGH_TRUST_VIDEO_SOURCES
+                else "link ze strony — dodaj tylko jeśli tytuł/kontekst jednoznacznie dotyczy tego przepisu"
             )
-        sections.append("=== WYKRYTE MATERIAŁY WIDEO ===\n" + "\n".join(vid_lines))
+            vid_lines.append(
+                f"{idx}. [{vid.platform} | {vid.source} | {trust_label}] "
+                f"url={vid.url} | embedUrl={vid.embed_url}{title_info}"
+            )
+        sections.append(
+            "=== WYKRYTE MATERIAŁY WIDEO (dodaj wyłącznie filmy jednoznacznie dotyczące tego przepisu) ===\n"
+            + "\n".join(vid_lines)
+        )
     else:
         sections.append("=== WYKRYTE MATERIAŁY WIDEO ===\nBrak wykrytych filmów.")
 
@@ -1891,7 +1985,7 @@ Zasady redakcyjne:
 4. Kategoria (dokładnie jedna z 6): Śniadania, Zupy, Dania główne, Sałatki i przekąski, Desery i wypieki, Napoje i dodatki.
 5. Poziom trudności: Łatwy, Średni lub Wymagający.
 6. Kroki numerowane kolejno od 1, ze zwięzłym tytułem i instrukcją.
-7. Zdjęcia i wideo: wybieraj wyłącznie z dostarczonych kandydatów (dokładnie jedno zdjęcie z isMain=true, `imageSearchQueries`: []). Gdy brak zdjęć w danych wejściowych, zostaw `images`: [] i podaj w `imageSearchQueries` 3-4 krótkie zapytania po nazwie potrawy (PL i EN). Nie wymyślaj URL-i."""
+7. Zdjęcia i wideo: wybieraj wyłącznie z dostarczonych kandydatów (dokładnie jedno zdjęcie z isMain=true, `imageSearchQueries`: []). Gdy brak zdjęć w danych wejściowych, zostaw `images`: [] i podaj w `imageSearchQueries` 3-4 krótkie zapytania po nazwie potrawy (PL i EN). Do `videos` dodawaj wyłącznie filmy jednoznacznie dotyczące tego konkretnego przepisu (pomijaj widgety social media, polecane posty i linki bez potwierdzenia w tytule/kontekście; w razie wątpliwości zostaw `videos: []`). Nie wymyślaj URL-i ani tytułów wideo."""
 
 GROQ_RECIPE_EXAMPLE_JSON = """{
   "id": "slug-przepisu",

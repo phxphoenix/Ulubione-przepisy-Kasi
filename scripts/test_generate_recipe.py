@@ -308,6 +308,100 @@ class TestHtmlJsonLdAndPrompts(unittest.TestCase):
         self.assertNotIn("WYCZYSZCZONA TREŚĆ STRONY", groq_prompt)
         self.assertNotIn('"review"', groq_prompt)
 
+    def test_video_extraction_filters_social_feed_widgets_and_prioritizes_embeds(self) -> None:
+        html_with_embed_and_widget = """<!doctype html>
+        <html><body>
+          <article>
+            <h1>Crispy Potatoes</h1>
+            <p>Roast at 220C until golden and crisp on all sides for best texture.</p>
+            <iframe src="https://www.youtube.com/embed/I3TyuVfYHkQ" title="Roast Potatoes Video"></iframe>
+            <div id="sb_instagram" class="sbi_feed">
+              <a class="sbi_photo" href="https://www.instagram.com/reel/DfvPDr4gp-h/">Chicken Reel</a>
+            </div>
+            <a href="https://www.instagram.com/reel/DfiQCSDl_cd/">Zobacz mój inny przepis na burgery</a>
+          </article>
+        </body></html>"""
+        parsed_embed = gr.parse_html_document(
+            html_with_embed_and_widget,
+            "https://example.com/potatoes",
+            "https://example.com/potatoes",
+        )
+        prioritized = gr._select_prioritized_videos(parsed_embed["videos"])
+        self.assertEqual(len(prioritized), 1)
+        self.assertEqual(prioritized[0].platform, "youtube")
+        self.assertEqual(prioritized[0].source, "iframe")
+
+        html_widget_only = """<!doctype html>
+        <html><body>
+          <article>
+            <h1>Roast Potatoes</h1>
+            <p>Boil briefly, toss with flour and olive oil, then roast until crispy.</p>
+            <div class="instagram-feed">
+              <a href="https://www.instagram.com/reel/DfvPDr4gp-h/">Honey garlic chicken</a>
+            </div>
+            <a href="https://www.instagram.com/reel/DfiQCSDl_cd/"><img src="/thumb.jpg" alt="Burgers" /></a>
+            <a href="https://www.instagram.com/reel/Dfg-DHQku07/">Instagram</a>
+            <a href="https://www.youtube.com/watch?v=abc123XYZ">Zobacz film z przygotowania ziemniaków</a>
+          </article>
+        </body></html>"""
+        parsed_links = gr.parse_html_document(
+            html_widget_only,
+            "https://example.com/potatoes",
+            "https://example.com/potatoes",
+        )
+        self.assertEqual(len(parsed_links["videos"]), 1)
+        self.assertEqual(parsed_links["videos"][0].platform, "youtube")
+        self.assertEqual(parsed_links["videos"][0].title, "Zobacz film z przygotowania ziemniaków")
+
+    def test_markdown_video_extraction_skips_image_tiles_and_social_clusters(self) -> None:
+        markdown = """
+        # The Best Roast Potatoes
+        [![Post 1](https://example.com/1.jpg)](https://www.instagram.com/reel/Df05tLGDxk8/)
+        [![Post 2](https://example.com/2.jpg)](https://www.instagram.com/reel/DfvPDr4gp-h/)
+        [Instagram](https://www.instagram.com/reel/DfiQCSDl_cd/)
+        https://www.instagram.com/reel/Dfg-DHQku07/
+        https://www.tiktok.com/@chef/video/7345678901234567890
+        [Zobacz instrukcję pieczenia ziemniaków](https://www.youtube.com/watch?v=R9K1wS0VwLA)
+        """
+        _, videos = gr._extract_media_from_markdown(
+            markdown, "https://example.com/potatoes"
+        )
+        self.assertEqual(len(videos), 1)
+        self.assertEqual(videos[0].platform, "youtube")
+        self.assertEqual(videos[0].title, "Zobacz instrukcję pieczenia ziemniaków")
+
+    def test_prompt_labels_video_trust_tiers_and_forbids_guessing(self) -> None:
+        data = gr.ExtractedPageData(
+            source_url="https://example.com/potatoes",
+            final_url="https://example.com/potatoes",
+            language_hint="en",
+            json_ld_recipes=[],
+            image_candidates=[gr.ImageCandidate(url="https://example.com/p.jpg", source="og:image", priority=2)],
+            video_candidates=[
+                gr.VideoCandidate(
+                    url="https://www.youtube.com/watch?v=R9K1wS0VwLA",
+                    platform="youtube",
+                    embed_url="https://www.youtube-nocookie.com/embed/R9K1wS0VwLA",
+                    title="Roast Potatoes",
+                    source="iframe",
+                ),
+                gr.VideoCandidate(
+                    url="https://www.instagram.com/reel/DfvPDr4gp-h/",
+                    platform="instagram",
+                    embed_url="https://www.instagram.com/reel/DfvPDr4gp-h/embed",
+                    title=None,
+                    source="article-link",
+                ),
+            ],
+            html_article_text="Roast potatoes",
+            jina_markdown="",
+        )
+        prompt = gr.build_prompt(data)
+        self.assertIn("osadzone w przepisie", prompt)
+        self.assertIn("link ze strony — dodaj tylko jeśli", prompt)
+        self.assertIn("BEZWZGLĘDNIE pomijaj linki z widgetów społecznościowych", gr.SYSTEM_INSTRUCTION)
+        self.assertIn("Nie wymyślaj URL-i ani tytułów wideo", gr.GROQ_SYSTEM_INSTRUCTION)
+
 
 class TestSlugSanitizationAndAiCascade(unittest.TestCase):
     def test_generate_unique_slug_handles_polish_diacritics_and_collisions(self) -> None:

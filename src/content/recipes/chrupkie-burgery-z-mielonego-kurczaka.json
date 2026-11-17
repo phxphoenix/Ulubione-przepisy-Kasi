@@ -49,30 +49,6 @@
       "platform": "youtube",
       "embedUrl": "https://www.youtube-nocookie.com/embed/I3TyuVfYHkQ",
       "title": "Przepis wideo na chrupkie burgery z kurczaka"
-    },
-    {
-      "url": "https://www.instagram.com/reel/DfiQCSDl_cd/",
-      "platform": "instagram",
-      "embedUrl": "https://www.instagram.com/reel/DfiQCSDl_cd/embed",
-      "title": "Przygotowanie burgerów na Instagramie"
-    },
-    {
-      "url": "https://www.instagram.com/reel/Dfg-DHQku07/",
-      "platform": "instagram",
-      "embedUrl": "https://www.instagram.com/reel/Dfg-DHQku07/embed",
-      "title": "Proces panierowania"
-    },
-    {
-      "url": "https://www.instagram.com/p/Dff4uR4kgS4/",
-      "platform": "instagram",
-      "embedUrl": "https://www.instagram.com/p/Dff4uR4kgS4/embed",
-      "title": "Prezentacja gotowego dania"
-    },
-    {
-      "url": "https://www.instagram.com/reel/DfdGh-dCX80/",
-      "platform": "instagram",
-      "embedUrl": "https://www.instagram.com/reel/DfdGh-dCX80/embed",
-      "title": "Składanie burgera"
     }
   ],
   "ingredientGroups": [
