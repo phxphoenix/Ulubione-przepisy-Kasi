@@ -1,0 +1,91 @@
+{
+  "id": "krem-z-bialej-czekolady",
+  "slug": "krem-z-bialej-czekolady",
+  "title": "Krem z białej czekolady",
+  "summary": "Jeśli szukasz stabilnego, sztywnego i niezwykle smacznego kremu z białej czekolady, ten przepis jest idealny. Jest prosty i uniwersalny – sprawdzi się do tortów, muffinek, babeczek i tartaletek.",
+  "category": "Desery i wypieki",
+  "tags": [
+    "krem z białej czekolady",
+    "białaczekolada",
+    "czekolada",
+    "tartanasłodko",
+    "tartaletki",
+    "krem",
+    "dessert"
+  ],
+  "prepTimeMinutes": 15,
+  "cookTimeMinutes": 20,
+  "totalTimeMinutes": 35,
+  "servings": 8.0,
+  "difficulty": "Łatwy",
+  "videos": [],
+  "ingredientGroups": [
+    {
+      "groupName": "Składniki",
+      "items": [
+        {
+          "name": "Śmietanka",
+          "amount": 200.0,
+          "unit": "ml",
+          "notes": "30 lub 36%"
+        },
+        {
+          "name": "Biała czekolada",
+          "amount": 180.0,
+          "unit": "g"
+        },
+        {
+          "name": "Mascarpone",
+          "amount": 200.0,
+          "unit": "g"
+        }
+      ]
+    }
+  ],
+  "steps": [
+    {
+      "stepNumber": 1,
+      "title": "Rozpuszczenie białej czekolady",
+      "instruction": "Rozpuść białą czekoladę w kąpieli wodnej lub w mikrofalówce, ciągle mieszając, aż będzie gładka.",
+      "tip": "Nie przegradzaj czekolady, aby nie zaczęła się piec na dobre."
+    },
+    {
+      "stepNumber": 2,
+      "title": "Ubić śmietankę",
+      "instruction": "W misce ubij śmietankę na sztywność pianek.",
+      "tip": "Mascarpone nie powinno być zbyt zimne, aby łatwiej je wcisnąć w masę."
+    },
+    {
+      "stepNumber": 3,
+      "title": "Połączenie składników",
+      "instruction": "W misce wymieszaj mascarpone z roztopioną białą czekoladą.",
+      "tip": "Mieszaj delikatnie, aby masa nie się ścięła."
+    },
+    {
+      "stepNumber": 4,
+      "title": "Wmontaż śmietanki",
+      "instruction": "Delikatnie wmieszaj ubitą śmietankę do masy czekoladowo-mascarpone.",
+      "tip": "Nie mieszaj zbyt energicznie, aby nie stracić objętości."
+    },
+    {
+      "stepNumber": 5,
+      "title": "Wstawienie do lodówki",
+      "instruction": "Przełóż krem do pojemników i wstaw do lodówki na minimum 2 godziny.",
+      "tip": "Przed nakładaniem na ciasto temperatura kremu powinna być zimna, ale nie zamrożona."
+    }
+  ],
+  "chefTips": [
+    "Do stabilniejszego kremu użyj 30% lub 36% śmietanki i nie przegotuj białej czekolady."
+  ],
+  "sourceUrl": "https://www.facebook.com/share/r/1ENMSMjXC4/",
+  "sourceDomain": "facebook.com",
+  "originalLanguage": "pl",
+  "createdAt": "2026-11-24T16:44:05.319Z",
+  "images": [
+    {
+      "url": "/images/recipes/krem-z-bialej-czekolady-main.jpg",
+      "caption": "Krem z białej czekolady w wersji gotowej",
+      "isMain": true
+    }
+  ]
+}
