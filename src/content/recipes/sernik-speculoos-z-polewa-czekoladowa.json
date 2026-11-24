@@ -1,0 +1,144 @@
+{
+  "id": "sernik-speculoos-z-polewa-czekoladowa",
+  "slug": "sernik-speculoos-z-polewa-czekoladowa",
+  "title": "Sernik speculoos z polewą czekoladową",
+  "summary": "Kremowy sernik na chrupiącym spodzie z ciasteczek speculoos, z lekką masą śmietankową i gładką polewą czekoladową. Idealny deser bez pieczenia, który najlepiej smakuje po schłodzeniu.",
+  "category": "Desery i wypieki",
+  "tags": [
+    "sernik",
+    "deser",
+    "speculoos",
+    "bez pieczenia",
+    "czekolada"
+  ],
+  "prepTimeMinutes": 20,
+  "cookTimeMinutes": 5,
+  "totalTimeMinutes": 385,
+  "servings": 8.0,
+  "difficulty": "Łatwy",
+  "videos": [],
+  "ingredientGroups": [
+    {
+      "groupName": "Spód",
+      "items": [
+        {
+          "name": "Ciasteczka speculoos",
+          "amount": 180.0,
+          "unit": "g",
+          "notes": "drobno zmiksowane"
+        },
+        {
+          "name": "Masło",
+          "amount": 70.0,
+          "unit": "g",
+          "notes": "roztopione"
+        }
+      ]
+    },
+    {
+      "groupName": "Masa serowa",
+      "items": [
+        {
+          "name": "Serek śmietankowy",
+          "amount": 600.0,
+          "unit": "g",
+          "notes": "do masy serowej"
+        },
+        {
+          "name": "Śmietanka kremówka",
+          "amount": 200.0,
+          "unit": "g",
+          "notes": "schłodzona"
+        },
+        {
+          "name": "Cukier",
+          "amount": 60.0,
+          "unit": "g"
+        },
+        {
+          "name": "Krem speculoos",
+          "amount": 1.0,
+          "unit": "łyżka",
+          "notes": "do masy serowej"
+        }
+      ]
+    },
+    {
+      "groupName": "Polewa",
+      "items": [
+        {
+          "name": "Czekolada",
+          "amount": 70.0,
+          "unit": "g",
+          "notes": "posiekana"
+        },
+        {
+          "name": "Olej kokosowy bezzapachowy",
+          "amount": 30.0,
+          "unit": "g",
+          "notes": "do polewy"
+        }
+      ]
+    }
+  ],
+  "steps": [
+    {
+      "stepNumber": 1,
+      "title": "Przygotowanie spodu",
+      "instruction": "Ciasteczka speculoos zmiksuj na drobny pył. Dodaj roztopione masło i wymieszaj, aż masa będzie miała konsystencję mokrego piasku.",
+      "tip": "Spód powinien być zwarty, ale nie suchy."
+    },
+    {
+      "stepNumber": 2,
+      "title": "Formowanie spodu",
+      "instruction": "Przełóż masę do formy lub rantala o średnicy około 18–20 cm. Wyrównaj i dociśnij łyżką, aby powstał zwarty spód. Wstaw do lodówki.",
+      "tip": "Dno formy możesz wyłożyć papierem do pieczenia."
+    },
+    {
+      "stepNumber": 3,
+      "title": "Masa serowa",
+      "instruction": "W misce utrzyj serek śmietankowy z cukrem i kremem speculoos na gładką, jednolitą masę.",
+      "tip": "Nie miksuj zbyt długo, aby masa pozostała lekka."
+    },
+    {
+      "stepNumber": 4,
+      "title": "Piana ze śmietanki",
+      "instruction": "Schłodzoną śmietankę kremówkę ubij na sztywną pianę. Delikatnie połącz ją z masą serową, mieszając szpatułką.",
+      "tip": "Wszystkie składniki powinny być zimne, dzięki temu masa będzie stabilniejsza."
+    },
+    {
+      "stepNumber": 5,
+      "title": "Wypełnienie formy",
+      "instruction": "Wyłóż masę serową na spód speculoos i dokładnie wyrównaj wierzch. Wstaw do lodówki na co najmniej 6 godzin, najlepiej na całą noc.",
+      "tip": "Sernik powinien dobrze stężeć przed nałożeniem polewy."
+    },
+    {
+      "stepNumber": 6,
+      "title": "Polewa czekoladowa",
+      "instruction": "Czekoladę roztop z olejem kokosowym w kąpieli wodnej lub w mikrofalówce. Wymieszaj do gładkości i lekko przestudź.",
+      "tip": "Polewa powinna być letnia, nie gorąca."
+    },
+    {
+      "stepNumber": 7,
+      "title": "Wykończenie",
+      "instruction": "Wylej polewę na zimny sernik, równomiernie rozprowadź i wstaw do lodówki, aż polewa zastygnie.",
+      "tip": "Przed podaniem możesz posypać wierzch pokruszonymi ciasteczkami speculoos."
+    }
+  ],
+  "chefTips": [
+    "Użyj dobrze schłodzonej śmietanki kremówki, aby piana była sztywna i stabilna.",
+    "Sernik najlepiej smakuje po nocy spędzonej w lodówce.",
+    "Polewę wylej na zimny sernik, aby ładnie zastygła i nie rozpuściła masy."
+  ],
+  "sourceUrl": "https://www.facebook.com/share/r/1EGKriS1PM/",
+  "sourceDomain": "facebook.com",
+  "originalLanguage": "fr",
+  "createdAt": "2026-11-24T20:23:34.451Z",
+  "images": [
+    {
+      "url": "/images/recipes/sernik-speculoos-z-polewa-czekoladowa-main.jpg",
+      "caption": "Gotowy sernik speculoos z polewą czekoladową",
+      "isMain": true
+    }
+  ]
+}
