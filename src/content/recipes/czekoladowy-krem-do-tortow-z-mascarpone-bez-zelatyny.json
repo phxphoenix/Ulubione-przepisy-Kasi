@@ -1,0 +1,97 @@
+{
+  "id": "czekoladowy-krem-do-tortow-z-mascarpone-bez-zelatyny",
+  "slug": "czekoladowy-krem-do-tortow-z-mascarpone-bez-zelatyny",
+  "title": "Czekoladowy krem do tortów z mascarpone (bez żelatyny)",
+  "summary": "Gładki, stabilny krem czekoladowy z mascarpone, idealny do tortów i deserów.",
+  "category": "Desery i wypieki",
+  "tags": [
+    "krem",
+    "czekolada",
+    "mascarpone",
+    "deser"
+  ],
+  "prepTimeMinutes": 15,
+  "cookTimeMinutes": 10,
+  "totalTimeMinutes": 25,
+  "servings": 4.0,
+  "difficulty": "Łatwy",
+  "videos": [],
+  "ingredientGroups": [
+    {
+      "groupName": "Składniki",
+      "items": [
+        {
+          "name": "Czekolada gorzka 64%",
+          "amount": 50.0,
+          "unit": "g"
+        },
+        {
+          "name": "Czekolada mleczna",
+          "amount": 170.0,
+          "unit": "g"
+        },
+        {
+          "name": "Śmietanka 30%",
+          "amount": 270.0,
+          "unit": "g"
+        },
+        {
+          "name": "Mascarpone",
+          "amount": 140.0,
+          "unit": "g",
+          "notes": "schłodzone"
+        }
+      ]
+    }
+  ],
+  "steps": [
+    {
+      "stepNumber": 1,
+      "title": "Podgrzewanie części śmietanki",
+      "instruction": "Odważ 135 g (połowę) śmietanki 30 % i podgrzej ją w rondelku, nie dopuszczając do wrzenia."
+    },
+    {
+      "stepNumber": 2,
+      "title": "Łączenie z czekoladą",
+      "instruction": "Do gorącej śmietanki dodaj połamane czekolady (50 g gorzkiej i 170 g mlecznej), mieszaj kilka minut, a następnie krótko zblenduj.",
+      "tip": "Blendowanie zapewnia gładkie połączenie czekolady ze śmietanką."
+    },
+    {
+      "stepNumber": 3,
+      "title": "Dodanie reszty śmietanki",
+      "instruction": "Wlej pozostałe 135 g śmietanki i ponownie krótko zblenduj, tworząc jednolitą ganache."
+    },
+    {
+      "stepNumber": 4,
+      "title": "Chłodzenie ganache",
+      "instruction": "Przelej ganache do naczynia, przykryj folią w kontakcie i schłódź w lodówce, najlepiej na całą noc."
+    },
+    {
+      "stepNumber": 5,
+      "title": "Miksowanie z mascarpone",
+      "instruction": "Schłodzony ganache zmiksuj z mascarpone na sztywno, aż uzyskasz gładką, stabilną konsystencję.",
+      "tip": "Miksuj tylko do uzyskania pożądanej konsystencji – dłuższe miksowanie może spowodować rozwarstwienie."
+    },
+    {
+      "stepNumber": 6,
+      "title": "Nakładanie kremu",
+      "instruction": "Krem wyłóż od razu na biszkopt lub inny deser, aby zachował stabilność."
+    }
+  ],
+  "chefTips": [
+    "Blendowanie to nie miksowanie – zapewnia pełne połączenie czekolady ze śmietanką.",
+    "Krem jest stabilny i nadaje się zarówno do tortów, jak i do deserów w szklankach.",
+    "Nie zamieniaj czekolady gorzkiej na białą w podanych proporcjach, zmieni to smak i konsystencję."
+  ],
+  "sourceUrl": "https://www.facebook.com/share/r/1FHQdAuxWr/",
+  "sourceDomain": "facebook.com",
+  "originalLanguage": "pl",
+  "createdAt": "2026-11-24T17:03:14.590Z",
+  "images": [
+    {
+      "url": "/images/recipes/czekoladowy-krem-do-tortow-z-mascarpone-bez-zelatyny-main.jpg",
+      "caption": "Czekoladowy krem z mascarpone",
+      "isMain": true
+    }
+  ]
+}
