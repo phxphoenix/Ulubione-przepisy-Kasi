@@ -1,0 +1,128 @@
+{
+  "id": "zawijane-wrapy-nachos-z-wolowina",
+  "slug": "zawijane-wrapy-nachos-z-wolowina",
+  "title": "Zawijane wrapy nachos z wołowiną",
+  "summary": "Szybkie i chrupiące wrapy z mielonej wołowiny, nachos i ulubionymi dodatkami – idealne na lekki obiad lub przekąskę.",
+  "category": "Dania główne",
+  "tags": [
+    "wrapy",
+    "nachos",
+    "wołowina",
+    "szybki przepis"
+  ],
+  "prepTimeMinutes": 15,
+  "cookTimeMinutes": 10,
+  "totalTimeMinutes": 25,
+  "servings": 4.0,
+  "difficulty": "Łatwy",
+  "videos": [],
+  "ingredientGroups": [
+    {
+      "groupName": "Składniki",
+      "items": [
+        {
+          "name": "Tortille pszenne (średnie)",
+          "amount": 8.0
+        },
+        {
+          "name": "Mielona wołowina",
+          "amount": 500.0,
+          "unit": "g"
+        },
+        {
+          "name": "Przyprawa do taco",
+          "amount": 2.0,
+          "unit": "łyżki"
+        },
+        {
+          "name": "Nachos (pokruszone)",
+          "amount": 100.0,
+          "unit": "g"
+        },
+        {
+          "name": "Ser cheddar (tarty)",
+          "amount": 150.0,
+          "unit": "g"
+        },
+        {
+          "name": "Sałata lodowa (posiekana)",
+          "amount": 100.0,
+          "unit": "g"
+        },
+        {
+          "name": "Pomidor (pokrojony w kostkę)",
+          "amount": 1.0
+        },
+        {
+          "name": "Awokado (pokrojone w plastry)",
+          "amount": 1.0
+        },
+        {
+          "name": "Śmietana kwaśna",
+          "amount": 4.0,
+          "unit": "łyżki"
+        },
+        {
+          "name": "Salsa pomidorowa",
+          "amount": 4.0,
+          "unit": "łyżki"
+        },
+        {
+          "name": "Olej roślinny",
+          "amount": 1.0,
+          "unit": "łyżka"
+        },
+        {
+          "name": "Sól i pieprz",
+          "notes": "do smaku"
+        }
+      ]
+    }
+  ],
+  "steps": [
+    {
+      "stepNumber": 1,
+      "title": "Przygotowanie mięsa",
+      "instruction": "Na patelni rozgrzej olej, dodaj mieloną wołowinę, dopraw solą, pieprzem i przyprawą do taco. Smaż, aż mięso będzie dobrze zarumienione, a nadmiar płynu odparuje."
+    },
+    {
+      "stepNumber": 2,
+      "title": "Podgrzanie tortilli",
+      "instruction": "Tortille podgrzej na suchej patelni lub w mikrofalówce przez 20‑30 s, aby były elastyczne.",
+      "tip": "Cienkie tortille łatwiej się zawijają."
+    },
+    {
+      "stepNumber": 3,
+      "title": "Składanie wrapów",
+      "instruction": "Na każdej tortilli rozłóż warstwę sałaty, mięsa, pokruszonych nachos, startego sera, pomidora i awokado. Dodaj łyżkę śmietany i salsy.",
+      "tip": "Nie nakładaj zbyt dużo farszu, aby łatwo było zwinąć wrap."
+    },
+    {
+      "stepNumber": 4,
+      "title": "Zawijanie i grillowanie",
+      "instruction": "Zwiń tortillę w rulon, końce podwiń pod spód. Umieść wrapy na rozgrzanej patelni (lub w piekarniku 200 °C) i smaż po 2‑3 minuty z każdej strony, aż ser się rozpuści, a wrap będzie chrupiący.",
+      "tip": "Jeśli używasz patelni, przykryj ją na ostatnią minutę, aby ser dokładnie się rozpuścił."
+    },
+    {
+      "stepNumber": 5,
+      "title": "Podanie",
+      "instruction": "Pokrój wrapy na pół, podawaj od razu z dodatkową salsą i śmietaną.",
+      "tip": "Posyp świeżą kolendrą lub szczypiorkiem dla aromatu."
+    }
+  ],
+  "chefTips": [
+    "Aby uzyskać jeszcze większą chrupkość, po upieczeniu posyp wrapy dodatkową warstwą pokruszonych nachos i krótko zapiecz w piekarniku.",
+    "Zamiast wołowiny można użyć mielonego indyka lub kurczaka – będzie lżej."
+  ],
+  "sourceUrl": "https://simplehomeedit.com/recipe/nachos-beef-folded-wraps/?fbclid=IwZXh0bgNhZW0CMTEAcGRvZgNzcnRjBmFwcF9pZA80MDk5NjI2MjMwODU2MDkAAR_T270ehetwr3zoyluFxmk5o-0hU4gBAuj66WjT0dQPO7dH3SkiXpQPGbKiiQ_aem_UAPzzD6I2EZXQNV7OyRnkg",
+  "sourceDomain": "simplehomeedit.com",
+  "originalLanguage": "en",
+  "createdAt": "2026-11-25T14:13:16.903Z",
+  "images": [
+    {
+      "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/1/14/McDonald%27s%2C_nachos_cheeseburger.jpg/1280px-McDonald%27s%2C_nachos_cheeseburger.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "caption": "Zawijane wrapy nachos z wołowiną (zdjęcie poglądowe)",
+      "isMain": true
+    }
+  ]
+}
