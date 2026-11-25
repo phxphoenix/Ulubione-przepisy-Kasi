@@ -1,0 +1,95 @@
+{
+  "id": "domowe-smash-burgery",
+  "slug": "domowe-smash-burgery",
+  "title": "Domowe smash burgery",
+  "summary": "Pyszne, chrupiące domowe smash burgery z rozpływającym się serem, karmelizowaną cebulą i wyjątkowym sosem.",
+  "category": "Dania główne",
+  "tags": [
+    "burgery",
+    "obiad",
+    "szybkie danie",
+    "domowy fastfood"
+  ],
+  "prepTimeMinutes": 15,
+  "cookTimeMinutes": 10,
+  "totalTimeMinutes": 25,
+  "servings": 4.0,
+  "difficulty": "Łatwy",
+  "videos": [],
+  "ingredientGroups": [
+    {
+      "groupName": "Mięso i dodatki",
+      "items": [
+        {
+          "name": "mielona wołowina",
+          "amount": 500.0,
+          "unit": "g",
+          "notes": "najlepiej 20% tłuszczu"
+        },
+        {
+          "name": "sól",
+          "notes": "do smaku"
+        },
+        {
+          "name": "pieprz",
+          "notes": "do smaku"
+        },
+        {
+          "name": "ser",
+          "amount": 4.0,
+          "unit": "plaster",
+          "notes": "topiący się ser w plastrach"
+        },
+        {
+          "name": "cebula",
+          "amount": 1.0,
+          "unit": "szt.",
+          "notes": "pokrojona w piórka do karmelizacji"
+        },
+        {
+          "name": "bułki do burgerów",
+          "amount": 4.0,
+          "unit": "szt."
+        }
+      ]
+    }
+  ],
+  "steps": [
+    {
+      "stepNumber": 1,
+      "title": "Przygotowanie mięsa",
+      "instruction": "Podziel mieloną wołowinę na równe porcje i uformuj z nich luźne kulki bez mocnego ugniatania.",
+      "tip": "Mięso o zawartości 20% tłuszczu zapewni odpowiednią soczystość."
+    },
+    {
+      "stepNumber": 2,
+      "title": "Smażenie i smashowanie",
+      "instruction": "Rozgrzej mocno patelnię. Ułóż kulki mięsa i mocno je spłaszcz (zrób smash) za pomocą łopatki, doprawiając solą i pieprzem. Smaż do uzyskania chrupiących brzegów.",
+      "tip": "Dociskaj mięso energicznie tylko w pierwszych sekundach smażenia."
+    },
+    {
+      "stepNumber": 3,
+      "title": "Dodanie sera",
+      "instruction": "Przewróć burgery na drugą stronę, nałóż na każdy plaster sera i przykryj patelnię na chwilę, aby ser się rozpuścił."
+    },
+    {
+      "stepNumber": 4,
+      "title": "Składanie burgerów",
+      "instruction": "Podpiecz lekko bułki, nałóż na nie przygotowane mięso z serem, dodaj karmelizowaną cebulę oraz ulubiony sos."
+    }
+  ],
+  "chefTips": [
+    "Używaj bardzo dobrze rozgrzanej patelni, najlepiej żeliwnej, aby uzyskać idealną, chrupiącą skórkę na mięsie."
+  ],
+  "sourceUrl": "https://www.facebook.com/share/r/1AR2Za5Sdi/",
+  "sourceDomain": "facebook.com",
+  "originalLanguage": "pl",
+  "createdAt": "2026-11-25T14:22:49.450Z",
+  "images": [
+    {
+      "url": "/images/recipes/domowe-smash-burgery-main.jpg",
+      "caption": "Domowe smash burgery",
+      "isMain": true
+    }
+  ]
+}
