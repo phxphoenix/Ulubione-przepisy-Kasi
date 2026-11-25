@@ -168,7 +168,7 @@ Zasady redakcyjne (PRZESTRZEGAJ ICH BEZWZGLĘDNIE):
 5. Poziom trudności: Wybierz dokładnie jedną wartość: `Łatwy`, `Średni` lub `Wymagający`.
 6. Kroki przygotowania: Rozpisz kroki w sposób przejrzysty, logiczny i przystępny (krok po kroku), numerując je kolejno od 1. Nadaj każdemu krokowi zwięzły tytuł, konkretną instrukcję oraz (gdy warto) krótką wskazówkę techniczną `tip`.
 7. Zdjęcia i wyszukiwanie zastępcze:
-   - Jeśli w danych wejściowych podano listę kandydatów zdjęć, wybierz z niej najlepsze zdjęcie główne potrawy (`isMain: true` — dokładnie jedno zdjęcie główne) oraz opcjonalnie 1–5 dodatkowych zdjęć etapowych/prezentacyjnych (`isMain: false`) wraz z polskim opisem `caption`. Jeśli wybrane zdjęcie etapowe wyraźnie ilustruje konkretny krok, przypisz jego URL do pola `imageUrl` tego kroku. Pole `imageSearchQueries` pozostaw puste `[]`.
+   - Jeśli w danych wejściowych podano listę kandydatów zdjęć, wybierz z niej najlepsze zdjęcie główne potrawy (`isMain: true` — dokładnie jedno zdjęcie główne) oraz opcjonalnie 1–5 dodatkowych zdjęć etapowych/prezentacyjnych (`isMain: false`) wraz z polskim opisem `caption`. Pomijaj portrety autora, zdjęcia książek, banery oraz zdjęcia innych/polecanych przepisów — wybieraj wyłącznie zdjęcia przedstawiające opisywaną potrawę. Jeśli wybrane zdjęcie etapowe wyraźnie ilustruje konkretny krok, przypisz jego URL do pola `imageUrl` tego kroku. Pole `imageSearchQueries` pozostaw puste `[]`.
    - Jeśli w danych wejściowych NIE wykryto żadnych kandydatów zdjęć (`Brak wykrytych zdjęć`), pozostaw tablicę `images` pustą `[]`, a w polu `imageSearchQueries` podaj 3–4 zwięzłe zapytania do wyszukiwarki zdjęć dopasowane do nazwy potrawy: najpierw dokładna polska nazwa potrawy z tytułu, następnie dokładne angielskie tłumaczenie nazwy potrawy, a na końcu prostsza klasyczna nazwa dania po polsku i po angielsku (np. `["Placki ziemniaczane z dynią i cheddarem", "Pumpkin potato pancakes with cheddar", "Placki ziemniaczane", "Potato pancakes"]`).
    NIGDY nie wymyślaj adresów URL grafik — korzystaj wyłącznie z kandydatów z danych wejściowych.
 8. Wideo:
@@ -857,8 +857,14 @@ def _verify_image_candidates(
     *,
     referer: Optional[str] = None,
 ) -> list[ImageCandidate]:
-    """Filter out dead links, non-images, and tiny UI icons (< MIN_IMAGE_BYTES or < 200x200)."""
+    """Filter out dead links, non-images, and tiny UI icons (< MIN_IMAGE_BYTES or < 200x200).
+
+    When a site sits behind Cloudflare/WAF (HTTP 403 for Python requests on both HTML and image
+    URLs), ``jina-markdown`` (priority 4) may be the only available source of dish photos. In that
+    case, retain inconclusive low-priority candidates rather than dropping every source image.
+    """
     verified: list[ImageCandidate] = []
+    inconclusive_low_priority: list[ImageCandidate] = []
     for cand in candidates:
         if not is_valid_image_candidate(cand.url, alt=cand.alt):
             continue
@@ -869,12 +875,25 @@ def _verify_image_candidates(
             )
             continue
         if status == "inconclusive" and cand.priority > 3:
+            inconclusive_low_priority.append(cand)
+            continue
+        verified.append(cand)
+
+    if verified:
+        for cand in inconclusive_low_priority:
             log_info(
                 f"Pominięto niezweryfikowanego kandydata niskiego priorytetu ({cand.source}): {cand.url}"
             )
-            continue
-        verified.append(cand)
-    return verified
+        return verified
+
+    if inconclusive_low_priority:
+        log_info(
+            f"Brak zweryfikowanych kandydatów wysokiego priorytetu — zachowuję "
+            f"{len(inconclusive_low_priority)} kandydatów z treści strony (np. za Cloudflare)."
+        )
+        return inconclusive_low_priority
+
+    return []
 
 
 def parse_srcset_best(srcset_value: str, base_url: str) -> Optional[str]:
@@ -1726,6 +1745,15 @@ def collect_page_data(url: str) -> ExtractedPageData:
     usable_jina = (
         jina_text if jina_text and not _is_challenge_or_error_text(jina_text) else None
     )
+    if html_data is None and usable_jina is None and jina_text:
+        log_warn(
+            "Krok B (r.jina.ai) zwrócił stronę wyzwania antybotowego — ponawiam próbę za 2.0s..."
+        )
+        time.sleep(JINA_RETRY_DELAYS_SECONDS[0])
+        jina_text = fetch_jina_markdown(url)
+        usable_jina = (
+            jina_text if jina_text and not _is_challenge_or_error_text(jina_text) else None
+        )
 
     if html_data is None and not usable_jina:
         raise RuntimeError(
@@ -1985,7 +2013,7 @@ Zasady redakcyjne:
 4. Kategoria (dokładnie jedna z 6): Śniadania, Zupy, Dania główne, Sałatki i przekąski, Desery i wypieki, Napoje i dodatki.
 5. Poziom trudności: Łatwy, Średni lub Wymagający.
 6. Kroki numerowane kolejno od 1, ze zwięzłym tytułem i instrukcją.
-7. Zdjęcia i wideo: wybieraj wyłącznie z dostarczonych kandydatów (dokładnie jedno zdjęcie z isMain=true, `imageSearchQueries`: []). Gdy brak zdjęć w danych wejściowych, zostaw `images`: [] i podaj w `imageSearchQueries` 3-4 krótkie zapytania po nazwie potrawy (PL i EN). Do `videos` dodawaj wyłącznie filmy jednoznacznie dotyczące tego konkretnego przepisu (pomijaj widgety social media, polecane posty i linki bez potwierdzenia w tytule/kontekście; w razie wątpliwości zostaw `videos: []`). Nie wymyślaj URL-i ani tytułów wideo."""
+7. Zdjęcia i wideo: wybieraj wyłącznie z dostarczonych kandydatów (dokładnie jedno zdjęcie z isMain=true, `imageSearchQueries`: []); pomijaj portrety autora, książki, banery i zdjęcia innych przepisów. Gdy brak zdjęć w danych wejściowych, zostaw `images`: [] i podaj w `imageSearchQueries` 3-4 krótkie zapytania po nazwie potrawy (PL i EN). Do `videos` dodawaj wyłącznie filmy jednoznacznie dotyczące tego konkretnego przepisu (pomijaj widgety social media, polecane posty i linki bez potwierdzenia w tytule/kontekście; w razie wątpliwości zostaw `videos: []`). Nie wymyślaj URL-i ani tytułów wideo."""
 
 GROQ_RECIPE_EXAMPLE_JSON = """{
   "id": "slug-przepisu",
@@ -2851,7 +2879,10 @@ FALLBACK_NOISE_TITLE_RE = re.compile(
     r"(?:^|[\s_\-/])(halloween|jack-o-lantern|pumpkin[\s_-]*patch|map|flag|"
     r"coat[\s_-]*of[\s_-]*arms|logo|icon|diagram|portrait|building|street|"
     r"stamp|coin|herbarium|botanical|list[\s_-]+of|lista[\s_-]+|disambiguation|"
-    r"ujednoznacznienie)(?:$|[\s_\-/.])",
+    r"ujednoznacznienie|mcdonald'?s?|burger[\s_-]*king|kfc|wendy'?s?|"
+    r"taco[\s_-]*bell|subway|domino'?s?|pizza[\s_-]*hut|starbucks|dunkin|"
+    r"fast[\s_-]*food|supermarket|grocery|packaging|receipt|storefront|"
+    r"menu[\s_-]*board)(?:$|[\s_\-/.',])",
     re.IGNORECASE,
 )
 
@@ -2920,7 +2951,21 @@ def _score_fallback_candidate(
     if overlap_query == 0 and overlap_title == 0:
         return -1.0
 
+    # For multi-word queries on Wikimedia Commons / Openverse, matching only a single modifier
+    # token (e.g. "nachos" in "nachos cheeseburger") is too weak to identify the target dish.
+    if (
+        not is_wikipedia_article
+        and len(query_tokens) >= 2
+        and overlap_query < 2
+        and overlap_title < 2
+    ):
+        return -1.0
+
     score = overlap_query * 3.0 + overlap_title * 2.0
+    if query_tokens:
+        score += (overlap_query / len(query_tokens)) * 2.0
+    extra_tokens = len(cand_tokens - query_tokens - title_tokens)
+    score -= min(extra_tokens, 6) * 0.4
     score -= query_idx * 0.5
     if is_wikipedia_article:
         score += 4.0

@@ -120,9 +120,24 @@
   "createdAt": "2026-11-25T14:13:16.903Z",
   "images": [
     {
-      "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/1/14/McDonald%27s%2C_nachos_cheeseburger.jpg/1280px-McDonald%27s%2C_nachos_cheeseburger.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
-      "caption": "Zawijane wrapy nachos z wołowiną (zdjęcie poglądowe)",
+      "url": "https://simplehomeedit.com/wp-content/uploads/2024/08/Nachos-Beef-Wraps-3.webp",
+      "caption": "Zbliżenie na chrupiące zawijane wrapy nachos z przyprawioną wołowiną i roztopionym serem na drewnianej desce",
       "isMain": true
+    },
+    {
+      "url": "https://simplehomeedit.com/wp-content/uploads/2024/08/Nachos-Beef-Wraps-1.webp",
+      "caption": "Zawijane wrapy nachos z wołowiną gotowe do podania",
+      "isMain": false
+    },
+    {
+      "url": "https://simplehomeedit.com/wp-content/uploads/2024/08/Nachos-Beef-Wraps-4.webp",
+      "caption": "Przekrojony wrap nachos z mięsem wołowym, serem i chrupiącymi chipsami",
+      "isMain": false
+    },
+    {
+      "url": "https://simplehomeedit.com/wp-content/uploads/2024/08/Nachos-Beef-Wraps-5.webp",
+      "caption": "Grillowane wrapy nachos z wołowiną i ulubionymi dodatkami",
+      "isMain": false
     }
   ]
 }

@@ -65,6 +65,29 @@ class TestLayer0ImageFiltering(unittest.TestCase):
 
         self.assertEqual([c.url for c in kept], ["https://cf.example.com/dish.webp"])
 
+    def test_verify_image_candidates_keeps_jina_markdown_when_cloudflare_blocks_all(self) -> None:
+        candidates = [
+            gr.ImageCandidate(url="https://cf.example.com/broken.webp", source="jina-markdown", priority=4),
+            gr.ImageCandidate(url="https://cf.example.com/Nachos-Beef-Wraps-1.webp", source="jina-markdown", priority=4),
+            gr.ImageCandidate(url="https://cf.example.com/Nachos-Beef-Wraps-3.webp", source="jina-markdown", priority=4),
+        ]
+
+        def fake_probe(url: str, *, referer: str | None = None, user_agent: str | None = None):
+            if "broken" in url:
+                return "reject", None, None
+            return "inconclusive", None, None
+
+        with mock.patch.object(gr, "_probe_image_url", side_effect=fake_probe):
+            kept = gr._verify_image_candidates(candidates, referer="https://cf.example.com/")
+
+        self.assertEqual(
+            [c.url for c in kept],
+            [
+                "https://cf.example.com/Nachos-Beef-Wraps-1.webp",
+                "https://cf.example.com/Nachos-Beef-Wraps-3.webp",
+            ],
+        )
+
 
 class TestLayer1FacebookAndPersistence(unittest.TestCase):
     def test_facebook_host_and_ephemeral_detection(self) -> None:
@@ -183,6 +206,36 @@ class TestLayer2FallbackBranch(unittest.TestCase):
         self.assertEqual(recipe.images[0].url, fallback_result[0]["url"])
         self.assertTrue(recipe.images[0].isMain)
         self.assertNotIn("imageSearchQueries", recipe.model_dump())
+
+    def test_fallback_filters_fast_food_and_weak_single_token_matches(self) -> None:
+        self.assertIsNotNone(
+            gr.FALLBACK_NOISE_TITLE_RE.search("McDonald's, nachos cheeseburger.jpg")
+        )
+        self.assertIsNotNone(
+            gr.FALLBACK_NOISE_TITLE_RE.search("Burger King Whopper tray.jpg")
+        )
+        self.assertIsNone(
+            gr.FALLBACK_NOISE_TITLE_RE.search("Grilled beef tortilla wrap.jpg")
+        )
+
+        title_tokens = gr._tokenize_search_text("Zawijane wrapy nachos z wołowiną")
+        weak_score = gr._score_fallback_candidate(
+            "Nachos cheeseburger on tray.jpg",
+            "Nachos beef folded wraps",
+            title_tokens,
+            0,
+            is_wikipedia_article=False,
+        )
+        self.assertLess(weak_score, 0)
+
+        strong_score = gr._score_fallback_candidate(
+            "Beef nachos folded wraps.jpg",
+            "Nachos beef folded wraps",
+            title_tokens,
+            0,
+            is_wikipedia_article=False,
+        )
+        self.assertGreater(strong_score, 0)
 
 
 class TestUrlAndVideoNormalization(unittest.TestCase):
