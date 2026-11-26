@@ -1,0 +1,109 @@
+{
+  "id": "domowa-wloska-focaccia",
+  "slug": "domowa-wloska-focaccia",
+  "title": "Domowa włoska focaccia",
+  "summary": "Klasyczna włoska focaccia z chrupiącą skórką, pomidorkami koktajlowymi i aromatycznym rozmarynem.",
+  "category": "Desery i wypieki",
+  "tags": [
+    "focaccia",
+    "kuchnia włoska",
+    "wypieki",
+    "chleb"
+  ],
+  "prepTimeMinutes": 20,
+  "cookTimeMinutes": 30,
+  "totalTimeMinutes": 50,
+  "servings": 4.0,
+  "difficulty": "Średni",
+  "videos": [],
+  "ingredientGroups": [
+    {
+      "groupName": "Ciasto",
+      "items": [
+        {
+          "name": "mąka do pizzy (typu 00)",
+          "amount": 400.0,
+          "unit": "g"
+        },
+        {
+          "name": "zimna woda",
+          "amount": 340.0,
+          "unit": "ml"
+        },
+        {
+          "name": "świeże drożdże",
+          "amount": 10.0,
+          "unit": "g"
+        },
+        {
+          "name": "sól",
+          "amount": 10.0,
+          "unit": "g"
+        },
+        {
+          "name": "cukier",
+          "amount": 5.0,
+          "unit": "g"
+        },
+        {
+          "name": "oliwa extra virgin",
+          "amount": 40.0,
+          "unit": "ml"
+        }
+      ]
+    },
+    {
+      "groupName": "Dodatki",
+      "items": [
+        {
+          "name": "pomidorki koktajlowe",
+          "notes": "według uznania"
+        },
+        {
+          "name": "świeży rozmaryn"
+        },
+        {
+          "name": "sól w płatkach"
+        },
+        {
+          "name": "oliwa extra virgin",
+          "notes": "do wysmarowania papieru i polania gotowej focacci"
+        }
+      ]
+    }
+  ],
+  "steps": [
+    {
+      "stepNumber": 1,
+      "title": "Przygotowanie ciasta",
+      "instruction": "Wymieszaj mąkę z zimną wodą, drożdżami, cukrem, solą oraz oliwą, aż składniki się połączą w jednolite ciasto."
+    },
+    {
+      "stepNumber": 2,
+      "title": "Wyrastanie",
+      "instruction": "Pozostaw ciasto w ciepłym miejscu do wyrośnięcia, aż podwoi swoją objętość."
+    },
+    {
+      "stepNumber": 3,
+      "title": "Formowanie",
+      "instruction": "Przełóż ciasto na blachę wyłożoną papierem do pieczenia wysmarowanym oliwą. Delikatnie rozciągnij je palcami, tworząc charakterystyczne wgłębienia na powierzchni."
+    },
+    {
+      "stepNumber": 4,
+      "title": "Dodatki i pieczenie",
+      "instruction": "Na wierzchu ułóż pomidorki koktajlowe oraz listki rozmarynu. Całość oprósz solą w płatkach i skrop oliwą. Piecz w rozgrzanym piekarniku, aż focaccia będzie złocista i chrupiąca."
+    }
+  ],
+  "chefTips": [],
+  "sourceUrl": "https://www.facebook.com/share/r/1c5UKZZkQZ/",
+  "sourceDomain": "facebook.com",
+  "originalLanguage": "pl",
+  "createdAt": "2026-11-26T10:31:13.965Z",
+  "images": [
+    {
+      "url": "/images/recipes/domowa-wloska-focaccia-main.jpg",
+      "caption": "Gotowa domowa focaccia z pomidorkami",
+      "isMain": true
+    }
+  ]
+}
