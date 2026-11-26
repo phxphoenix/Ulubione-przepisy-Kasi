@@ -1,0 +1,145 @@
+{
+  "id": "latwa-focaccia-bez-zagniatania-dla-poczatkujacych",
+  "slug": "latwa-focaccia-bez-zagniatania-dla-poczatkujacych",
+  "title": "Łatwa focaccia bez zagniatania dla początkujących",
+  "summary": "Prosta domowa focaccia przygotowywana w jednej misce, bez zagniatania i miksera, z powolnym wyrastaniem w lodówce. Charakteryzuje się złocistą, chrupiącą skórką oraz miękkim, puszystym wnętrzem.",
+  "category": "Desery i wypieki",
+  "tags": [
+    "focaccia",
+    "pieczywo",
+    "wypieki",
+    "bez zagniatania",
+    "kuchnia włoska"
+  ],
+  "prepTimeMinutes": 1005,
+  "cookTimeMinutes": 30,
+  "totalTimeMinutes": 1035,
+  "servings": 8.0,
+  "difficulty": "Łatwy",
+  "videos": [],
+  "ingredientGroups": [
+    {
+      "groupName": "Ciasto",
+      "items": [
+        {
+          "name": "mąka chlebowa (lub zwykła mąka pszenna)",
+          "amount": 500.0,
+          "unit": "g",
+          "notes": "silna mąka pszenna zapewnia najlepszą strukturę"
+        },
+        {
+          "name": "suche drożdże instant",
+          "amount": 7.0,
+          "unit": "g",
+          "notes": "około 2 łyżeczki"
+        },
+        {
+          "name": "drobna sól morska",
+          "amount": 2.0,
+          "unit": "łyżeczki"
+        },
+        {
+          "name": "letnia woda",
+          "amount": 2.0,
+          "unit": "szklanki",
+          "notes": "około 480 ml"
+        },
+        {
+          "name": "oliwa z oliwek",
+          "amount": 80.0,
+          "unit": "ml",
+          "notes": "plus dodatkowa ilość do natłuszczenia"
+        }
+      ]
+    },
+    {
+      "groupName": "Do wykończenia",
+      "items": [
+        {
+          "name": "świeże liście rozmarynu",
+          "amount": 1.0,
+          "unit": "łyżeczka",
+          "notes": "lub nieco więcej według uznania"
+        },
+        {
+          "name": "płatki soli morskiej",
+          "notes": "do posypania przed pieczeniem"
+        }
+      ]
+    }
+  ],
+  "steps": [
+    {
+      "stepNumber": 1,
+      "title": "Przygotowanie ciasta",
+      "instruction": "W dużej misce wymieszaj mąkę, drożdże instant oraz drobną sól morską. Dodaj letnią wodę i wymieszaj łopatką, aż nie będzie widać suchej mąki, a powstanie luźne, bardzo miękkie i kleiste ciasto. Przykryj miskę pokrywką lub folią spożywczą i odstaw w temperaturze pokojowej na 30 minut.",
+      "tip": "Ciasto ma być bardzo wilgotne i kleiste – taka ma być jego konsystencja."
+    },
+    {
+      "stepNumber": 2,
+      "title": "Składanie ciasta",
+      "instruction": "Zwilż jedną dłoń wodą, aby ciasto do niej nie przywierało. Podważ brzeg ciasta, delikatnie wyciągnij je ku górze i złóż do środka. Obróć lekko miskę i powtórz tę czynność jeszcze siedem razy, okrążając całe ciasto. Czynność ta wzmocni gluten bez konieczności tradycyjnego zagniatania."
+    },
+    {
+      "stepNumber": 3,
+      "title": "Natłuszczenie oliwą",
+      "instruction": "Polej ciasto 2 łyżkami oliwy z oliwek. Używając dłoni, delikatnie obróć ciasto, aby pokryło się oliwą ze wszystkich stron, również od spodu. Spryskaj lub natłuść lekko wnętrze miski nad ciastem, aby zapobiec jego przywieraniu."
+    },
+    {
+      "stepNumber": 4,
+      "title": "Wyrastanie w lodówce",
+      "instruction": "Przykryj szczelnie miskę pokrywką lub folią spożywczą i wstaw do lodówki na co najmniej 12 godzin, a nawet do 3 dni. Podczas leżakowania ciasto powiększy objętość i pojawią się w nim pęcherzyki powietrza.",
+      "tip": "Długie wyrastanie w niskiej temperaturze pozwala rozwijać głęboki smak pieczywa."
+    },
+    {
+      "stepNumber": 5,
+      "title": "Składanie zimnego ciasta",
+      "instruction": "Wyjmij ciasto z lodówki. Jedną lekko naoliwioną dłonią delikatnie oddziel ciasto od brzegów miski. Podważ jeden brzeg, wyciągnij ku górze i złóż do środka. Obróć miskę i powtórz tę czynność kolejne siedem razy, pracując ostrożnie, aby nie pozbyć się całego powietrza."
+    },
+    {
+      "stepNumber": 6,
+      "title": "Przygotowanie formy",
+      "instruction": "Metalową formę do pieczenia o wymiarach 23 x 33 cm obficie spryskaj lub natłuść oliwą z oliwek, dbając o dno i brzegi. Wlej 1,5 łyżki oliwy z oliwek na środek formy.",
+      "tip": "Użycie metalowej formy zamiast szklanej lub ceramicznej gwarantuje najbardziej chrupiący spód."
+    },
+    {
+      "stepNumber": 7,
+      "title": "Przełożenie do formy",
+      "instruction": "Delikatnie przełóż schłodzone ciasto do przygotowanej formy. Obróć je raz, aby obie strony pokryły się warstwą oliwy. Nie ugniataj ciasta ani nie wciskaj go na siłę w rogi – rozłoży się samoistnie podczas wyrastania."
+    },
+    {
+      "stepNumber": 8,
+      "title": "Drugie wyrastanie",
+      "instruction": "Zostaw ciasto bez przykrycia w temperaturze pokojowej na około 3–4 godziny, aż stanie się widocznie puszyste, napowietrzone, bąbelkowe i rozleje się ku brzegom formy. Po delikatnym potrząśnięciu formą ciasto powinno lekko falować.",
+      "tip": "W chłodniejszej kuchni ten proces może potrwać nieco dłużej – kieruj się wyglądem ciasta."
+    },
+    {
+      "stepNumber": 9,
+      "title": "Formowanie dołków i dodatki",
+      "instruction": "Rozgrzej piekarnik do temperatury 220°C. Polej ciasto równomiernie pozostałą 1,5 łyżki oliwy z oliwek i posyp rozmarynem. Lekko naoliwionymi palcami mocno wciśnij się w ciasto, tworząc głębokie dołki na całej powierzchni. Posyp obficie płatkami soli morskiej.",
+      "tip": "Możesz delikatnie pomagać ciastu rozciągnąć się w rogi formy podczas robienia dołków."
+    },
+    {
+      "stepNumber": 10,
+      "title": "Pieczenie",
+      "instruction": "Piecz na środkowym poziomie piekarnika przez 25–30 minut, aż góra będzie mocno złocista z chrupiącymi krawędziami, a spód wypieczony. Ostrożnie podważ brzegi łopatką, aby upewnić się, że spód jest złoty przed wyjęciem z piekarnika.",
+      "tip": "Przełóż upieczoną focaccię na kratkę zaraz po wyjęciu z formy, aby para wodna nie zmiękczyła spodu."
+    }
+  ],
+  "chefTips": [
+    "Do pomiaru mąki najlepiej używać wagi kuchennej, aby zachować idealne proporcje.",
+    "Nie żałuj oliwy z oliwek – to ona odpowiada za wyjątkowy smak, chrupiącą skórkę i strukturę focacci.",
+    "Focaccia najlepiej smakuje w dniu pieczenia, kiedy skórka jest idealnie chrupiąca, a środek puszysty."
+  ],
+  "sourceUrl": "https://simplehomeedit.com/recipe/easy-no-knead-focaccia-recipe/?fbclid=IwZXh0bgNhZW0CMTEAcGRvZgNzcnRjBmFwcF9pZA80MDk5NjI2MjMwODU2MDkAAR9xZXnpYWHBPgG_ZMD_wczB4MoGH-0eiwSMTmLyccKY0232A5gJV5XHrrkcLA_aem_O-CSKJ_49v34xQf4V2zBWw",
+  "sourceDomain": "simplehomeedit.com",
+  "originalLanguage": "en",
+  "createdAt": "2026-11-26T12:35:40.984Z",
+  "images": [
+    {
+      "url": "https://simplehomeedit.com/wp-content/uploads/2026/10/easy-beginners-focaccia-bread-stracciatella-mortadella-dipping-oil-1084-867x1300.webp",
+      "caption": "Domowa focaccia podana ze stracciatellą, mortadelą i oliwą czosnkową",
+      "isMain": true
+    }
+  ]
+}
