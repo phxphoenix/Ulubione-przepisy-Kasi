@@ -1,0 +1,95 @@
+{
+  "id": "kurczak-bang-bang",
+  "slug": "kurczak-bang-bang",
+  "title": "Kurczak Bang Bang",
+  "summary": "Pyszny, pieczony w piekarniku kurczak w chrupiącej panierce z kremowym, słodko-pikantnym sosem bang bang.",
+  "category": "Dania główne",
+  "tags": [
+    "kurczak",
+    "obiad",
+    "pieczony kurczak",
+    "kuchnia azjatycka",
+    "szybki obiad"
+  ],
+  "prepTimeMinutes": 20,
+  "cookTimeMinutes": 25,
+  "totalTimeMinutes": 45,
+  "servings": 4.0,
+  "difficulty": "Łatwy",
+  "videos": [],
+  "ingredientGroups": [
+    {
+      "groupName": "Kurczak",
+      "items": [
+        {
+          "name": "filet z piersi kurczaka",
+          "amount": 600.0,
+          "unit": "g",
+          "notes": "pokrojony w kostkę"
+        }
+      ]
+    },
+    {
+      "groupName": "Sos Bang Bang",
+      "items": [
+        {
+          "name": "majonez",
+          "amount": 120.0,
+          "unit": "ml"
+        },
+        {
+          "name": "sos słodkie chili",
+          "amount": 4.0,
+          "unit": "łyżki"
+        },
+        {
+          "name": "sos sriracha",
+          "amount": 1.0,
+          "unit": "łyżeczka",
+          "notes": "lub więcej do smaku"
+        }
+      ]
+    }
+  ],
+  "steps": [
+    {
+      "stepNumber": 1,
+      "title": "Przygotowanie piekarnika",
+      "instruction": "Rozgrzej piekarnik do temperatury 200°C.",
+      "tip": "Użyj funkcji termoobiegu, aby kurczak był bardziej chrupiący."
+    },
+    {
+      "stepNumber": 2,
+      "title": "Przygotowanie kurczaka",
+      "instruction": "Pokrój pierś z kurczaka w niedużą kostkę, a następnie upiecz w piekarniku na złoty kolor i skarmelizowanie.",
+      "tip": "Możesz lekko doprawić kurczaka solą, pieprzem oraz słodką papryką przed pieczeniem.",
+      "imageUrl": "/images/recipes/kurczak-bang-bang-main.jpg"
+    },
+    {
+      "stepNumber": 3,
+      "title": "Przygotowanie sosu",
+      "instruction": "W miseczce wymieszaj majonez, sos słodkie chili oraz srirachę na gładki sos.",
+      "tip": "Ilość srirachy dostosuj do preferowanego poziomu ostrości."
+    },
+    {
+      "stepNumber": 4,
+      "title": "Podanie",
+      "instruction": "Po upieczeniu wymieszaj kurczaka z przygotowanym sosem bang bang lub polej go od góry przed podaniem. Podawaj z gotowanym ryżem oraz chrupiącą kapustą, marchewką i ogórkiem."
+    }
+  ],
+  "chefTips": [
+    "Danie doskonale smakuje w akompaniamencie świeżych warzyw pokrojonych w julienne.",
+    "Sos można przygotować wcześniej i trzymać w lodówce."
+  ],
+  "sourceUrl": "https://www.facebook.com/share/r/1Dg8nkaR6i/",
+  "sourceDomain": "facebook.com",
+  "originalLanguage": "en",
+  "createdAt": "2026-11-27T12:31:27.765Z",
+  "images": [
+    {
+      "url": "/images/recipes/kurczak-bang-bang-main.jpg",
+      "caption": "Kurczak Bang Bang w trakcie przygotowania",
+      "isMain": true
+    }
+  ]
+}
